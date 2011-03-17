@@ -3,11 +3,22 @@ fastcluster: Fast hierarchical clustering routines for R and Python
 Copyright © 2011 Daniel Müllner
 <http://math.stanford.edu/~muellner>
 
-The fastcluster package is a C++ library for hierarchical (agglomerative) clustering on data with a dissimilarity index. It efficiently implements the seven most widely used clustering schemes: single, complete, average, weighted, Ward,centroid and median linkage. (The “weighted” distance update scheme (Matlab, SciPy) is also called “mcquitty” in R.) The library currently has interfaces to two languages: R and Python/SciPy. The interfaces are designed as drop-in replacements for the existing routines. Once the fastcluster library is loaded at the beginning of the code, every program that uses hierarchical clustering can benefit immediately and effortlessly from the performance gain.
+The fastcluster package is a C++ library for hierarchical (agglomerative)
+clustering on data with a dissimilarity index. It efficiently implements the
+seven most widely used clustering schemes: single, complete, average, weighted,
+Ward,centroid and median linkage. (The “weighted” distance update scheme
+(Matlab, SciPy) is also called “mcquitty” in R.) The library currently has
+interfaces to two languages: R and Python/SciPy. The interfaces are designed as
+drop-in replacements for the existing routines. Once the fastcluster library is
+loaded at the beginning of the code, every program that uses hierarchical
+clustering can benefit immediately and effortlessly from the performance gain.
 
-See the author's home page <http://math.stanford.edu/~muellner> for more information, in particular a performance comparison with other clustering packages.
+See the author's home page <http://math.stanford.edu/~muellner> for more
+information, in particular a performance comparison with other clustering
+packages.
 
-The fastcluster package is licensed under the GNU General Public License (GPL) Version 3. See <http://www.gnu.org/licenses/gpl.html>
+The fastcluster package is licensed under the GNU General Public License (GPL)
+Version 3. See <http://www.gnu.org/licenses/gpl.html>
 
 
 Installation
@@ -23,13 +34,24 @@ In R, load the package with the following command:
 
     library('fastcluster')
 
-The package overwrites the function hclust from the “stats” package (in the same way as the flashClust package does). Please remove any references to the flashClust package in your R files to not accidentally overwrite the hclust function with the flashClust version.
+The package overwrites the function hclust from the “stats” package (in the same
+way as the flashClust package does). Please remove any references to the
+flashClust package in your R files to not accidentally overwrite the hclust
+function with the flashClust version.
 
-The new hclust function has exactly the same calling conventions as the old one. You may just load the package and immediately and effortlessly enjoy the performance improvements. The function is also an improvement to the flashClust function from the “flashClust” package. Just replace every call to flashClust by hclust and expect your code to work as before, only better (see the Warning 1 below).
+The new hclust function has exactly the same calling conventions as the old
+one. You may just load the package and immediately and effortlessly enjoy the
+performance improvements. The function is also an improvement to the flashClust
+function from the “flashClust” package. Just replace every call to flashClust by
+hclust and expect your code to work as before, only better (see the Warning 1
+below).
 
-The agnes function from the “cluster“ package does a bit more than hclust. If you do not need the extra functionality, you may also wish to replace agnes by fastcluster's hclust for higher speed.
+The agnes function from the “cluster“ package does a bit more than hclust. If
+you do not need the extra functionality, you may also wish to replace agnes by
+fastcluster's hclust for higher speed.
 
-If you need to access the old function or make sure that the right function is called, specify the package as follows:
+If you need to access the old function or make sure that the right function is
+called, specify the package as follows:
 
     stats::hclust(…)
     fastcluster::hclust(…)
@@ -37,17 +59,35 @@ If you need to access the old function or make sure that the right function is c
 
 WARNING 1
 ‾‾‾‾‾‾‾‾‾
-The “flashClust“ package has a bug in its clustering algorithm. The clustering methods “centroid” and “median” produce wrong results.
 
-(Here is a proven, rough, lower bound on the error rate: If there is a so-called “inversion” in the dendrogram, flashClust produces wrong results in at least 1/3 of all cases. The actual error rate is much closer to 1, and errors occur also if no inversions are present.)
+The “flashClust“ package has a bug in its clustering algorithm. The clustering
+methods “centroid” and “median” produce wrong results.
+
+(Here is a proven, rough, lower bound on the error rate: If there is a so-called
+“inversion” in the dendrogram, flashClust produces wrong results in at least 1/3
+of all cases. The actual error rate is much closer to 1, and errors occur also
+if no inversions are present.)
 
 WARNING 2
 ‾‾‾‾‾‾‾‾‾
-R and Matlab/SciPy use different conventions for the “Ward”, “centroid” and “median” methods. R assumes that the dissimilarity matrix consists of squared Euclidean distances, while Matlab and SciPy expect non-squared Euclidean distances. The fastcluster package respects these conventions and uses different formulas in the two interfaces.
+R and Matlab/SciPy use different conventions for the “Ward”, “centroid” and
+“median” methods. R assumes that the dissimilarity matrix consists of squared
+Euclidean distances, while Matlab and SciPy expect non-squared Euclidean
+distances. The fastcluster package respects these conventions and uses different
+formulas in the two interfaces.
 
-If you want the same results in both interfaces, then feed R with the entry-wise square of the distance matrix, D^2, for the “Ward”, “centroid” and “median” methods and later take the square root of the height field in the dendrogram. For the “average” and “weighted” alias “mcquitty” methods, you must still take the same distance matrix D as in the Python interface for the same results. The “single” and “complete” methods only depend on the relative order of the distances, hence it does not make a difference whether one operates on the distances or the squared distances.
+If you want the same results in both interfaces, then feed R with the entry-wise
+square of the distance matrix, D^2, for the “Ward”, “centroid” and “median”
+methods and later take the square root of the height field in the
+dendrogram. For the “average” and “weighted” alias “mcquitty” methods, you must
+still take the same distance matrix D as in the Python interface for the same
+results. The “single” and “complete” methods only depend on the relative order
+of the distances, hence it does not make a difference whether one operates on
+the distances or the squared distances.
 
-The code example in the R documentation (enter ?hclust or example(hclust) in R) contains an instance where the squared distance matrix is generated from Euclidean data.
+The code example in the R documentation (enter ?hclust or example(hclust) in R)
+contains an instance where the squared distance matrix is generated from
+Euclidean data.
 
 2. Python
 ‾‾‾‾‾‾‾‾‾
@@ -66,18 +106,30 @@ It provides the following functions:
     centroid(D)
     median(D)
 
-The argument D is either a compressed distance matrix or a collection of m observation vectors in n dimensions as an (m×n) array. Apart from the argument preserve_input, the methods have the same input and output as the functions of the same name in the package scipy.cluster.hierarchy. Therefore, I do not duplicate the documentation and refer to the SciPy documentation for further details:
+The argument D is either a compressed distance matrix or a collection of m
+observation vectors in n dimensions as an (m×n) array. Apart from the argument
+preserve_input, the methods have the same input and output as the functions of
+the same name in the package scipy.cluster.hierarchy. Therefore, I do not
+duplicate the documentation and refer to the SciPy documentation for further
+details:
 
     http://docs.scipy.org/doc/scipy/reference/cluster.hierarchy.html
     http://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
 
-The additional, optional argument preserve_input specifies whether the fastcluster package first copies the distance matrix or writes into the existing array. If you generate the distance matrix only for the clustering step and do not need it afterwards, you may save half the memory by saying preserve_input=False.
+The additional, optional argument preserve_input specifies whether the
+fastcluster package first copies the distance matrix or writes into the existing
+array. If you generate the distance matrix only for the clustering step and do
+not need it afterwards, you may save half the memory by saying
+preserve_input=False.
 
-Note that the input array D contains unspecified values after this procedure. You may want to write
+Note that the input array D contains unspecified values after this
+procedure. You may want to write
 
     linkage(D, method="…", preserve_distance=False)
     del D
 
-to make sure that you do not accidentally use the matrix D after it has been used as scratch memory.
+to make sure that you do not accidentally use the matrix D after it has been
+used as scratch memory.
 
-The single linkage algorithm does not write to the distance matrix or its copy anyway, so the preserve_distance flag has no effect in this case.
+The single linkage algorithm does not write to the distance matrix or its copy
+anyway, so the preserve_distance flag has no effect in this case.

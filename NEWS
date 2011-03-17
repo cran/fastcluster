@@ -1,0 +1,21 @@
+fastcluster: Fast hierarchical clustering routines for R and Python
+
+Copyright © 2011 Daniel Müllner
+<http://math.stanford.edu/~muellner>
+
+
+Version history
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+Version 1.0.0, 03/14/2011:
+
+* Initial release, dependent on Rcpp
+
+
+Version 1.0.1, 03/15/2011:
+
+* Removed the dependence on Rcpp; only R's original C interface is used.
+
+
+Version 1.0.2, 03/17/2011:
+
+* Fixed a typo.

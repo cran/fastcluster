@@ -3,7 +3,7 @@ citEntry(entry = "Manual"
         ,title = "fastcluster: Fast hierarchical clustering routines for R and Python"
         ,author = as.person("Daniel M\\\"ullner")
         ,year = "2011"
-        ,note = "Version 1.0.1"
+        ,note = "Version 1.0.2"
         ,url = "http://math.stanford.edu/~muellner"
-        ,textVersion = "Daniel Müllner, fastcluster: Fast hierarchical clustering routines for R and Python, Version 1.0.1, 2011. Available at CRAN and http://math.stanford.edu/~muellner."
+        ,textVersion = "Daniel Müllner, fastcluster: Fast hierarchical clustering routines for R and Python, Version 1.0.2, 2011. Available at CRAN and http://math.stanford.edu/~muellner."
 )

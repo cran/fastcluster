@@ -43,7 +43,7 @@ enum {
   RET_UNKNOWN_ERROR  = 3
  };
 
-// self-destroying array pointer
+// self-destructing array pointer
 template <typename type>
 class auto_array_ptr{
 private:
