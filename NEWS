@@ -8,14 +8,20 @@ Version history
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 Version 1.0.0, 03/14/2011:
 
-* Initial release, dependent on Rcpp
-
+  • Initial release, dependent on Rcpp. Not available on CRAN.
 
 Version 1.0.1, 03/15/2011:
 
-* Removed the dependence on Rcpp; only R's original C interface is used.
-
+  • Removed the dependence on Rcpp; only R's original C interface is used.
 
 Version 1.0.2, 03/17/2011:
 
-* Fixed a typo.
+  • File DESCRIPTION: Fixed a typo
+
+Version 1.0.3, 03/20/2011:
+
+  • File README: Removed the warning about false results from the flashClust
+    package since the new flashClust version 1.01 has this error corrected.
+
+  • Clean the test file fastcluster_test.R up. (No dependency on the MASS
+    package any more)

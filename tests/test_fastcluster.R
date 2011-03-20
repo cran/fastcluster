@@ -3,9 +3,6 @@
 #  Copyright © 2011 Daniel Müllner
 #  <http://math.stanford.edu/~muellner>
 
-require(flashClust)
-require(MASS)
-
 seed = as.integer(runif(1, 0, 1e9))
 set.seed(seed)
 
@@ -72,7 +69,7 @@ test_eucl <- function() {
   cat (sprintf("Number of sample points: %d\n",n))
   cat (sprintf("Dimension: %d\n",dim))
 
-  pcd = mvrnorm(n=n, mu=rep(0,n), Sigma=diag(nrow=n))
+  pcd = matrix(rnorm(n*dim), c(n,dim))
   d = dist(pcd)
   test(d)
 }
@@ -89,7 +86,7 @@ test <-  function(d) {
   cat('Passed.\n')
 }
 
-N = 10
+N = 25
 for (i in (1:N)) {
   if (i%%2==1) {
     cat(sprintf('Random test %d of %d (uniform distribution of distances):\n',i,N))

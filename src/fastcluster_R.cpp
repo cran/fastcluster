@@ -149,7 +149,7 @@ extern "C" {
         }
         else {
           PROTECT(members_ = AS_INTEGER(members_));
-          if (LENGTH(members_)<0 || LENGTH(members_)!=N)
+          if (LENGTH(members_)!=N)
             Rf_error("'members' must have length N.");
           const int * const m = INTEGER_POINTER(members_);
           for (t_index i=0; i<N; i++) members[i] = m[i];
@@ -159,11 +159,13 @@ extern "C" {
 
       // Parameter D_: dissimilarity matrix
       PROTECT(D_ = AS_NUMERIC(D_));
-      if (LENGTH(D_)<0 || LENGTH(D_)!=NN)
+      if (LENGTH(D_)!=NN)
         Rf_error("'D' must have length (N \\choose 2).");
       const double * const D = NUMERIC_POINTER(D_);
       UNPROTECT(1); // D_
 
+      // Make a working copy of the dissimilarity array
+      // for all methods except "single".
       auto_array_ptr<double> D__;
       if (method!=METHOD_METR_SINGLE) {
         D__.init(NN);
@@ -200,7 +202,7 @@ extern "C" {
       }
 
       D__.free();     // Free the memory now
-      members.free(); // (not strictly necessary.
+      members.free(); // (not strictly necessary).
 
       SEXP m; // return field "merge"
       PROTECT(m = NEW_INTEGER(2*(N-1)));
@@ -232,7 +234,7 @@ extern "C" {
       SET_STRING_ELT(n, 1, COPY_TO_USER_STRING("height"));
       SET_STRING_ELT(n, 2, COPY_TO_USER_STRING("order"));
 
-      PROTECT(r = NEW_LIST(3));
+      PROTECT(r = NEW_LIST(3)); // field names in the output list
       SET_ELEMENT(r, 0, m);
       SET_ELEMENT(r, 1, h);
       SET_ELEMENT(r, 2, o);

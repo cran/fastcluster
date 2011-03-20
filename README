@@ -43,12 +43,10 @@ The new hclust function has exactly the same calling conventions as the old
 one. You may just load the package and immediately and effortlessly enjoy the
 performance improvements. The function is also an improvement to the flashClust
 function from the “flashClust” package. Just replace every call to flashClust by
-hclust and expect your code to work as before, only better (see the Warning 1
-below).
+hclust and expect your code to work as before, only faster. (If you are using
+flashClust prior to version 1.01, update it! See the change log for flashClust:
 
-The agnes function from the “cluster“ package does a bit more than hclust. If
-you do not need the extra functionality, you may also wish to replace agnes by
-fastcluster's hclust for higher speed.
+    http://cran.r-project.org/web/packages/flashClust/ChangeLog )
 
 If you need to access the old function or make sure that the right function is
 called, specify the package as follows:
@@ -57,19 +55,8 @@ called, specify the package as follows:
     fastcluster::hclust(…)
     flashClust::hclust(…)
 
-WARNING 1
-‾‾‾‾‾‾‾‾‾
-
-The “flashClust“ package has a bug in its clustering algorithm. The clustering
-methods “centroid” and “median” produce wrong results.
-
-(Here is a proven, rough, lower bound on the error rate: If there is a so-called
-“inversion” in the dendrogram, flashClust produces wrong results in at least 1/3
-of all cases. The actual error rate is much closer to 1, and errors occur also
-if no inversions are present.)
-
-WARNING 2
-‾‾‾‾‾‾‾‾‾
+WARNING
+‾‾‾‾‾‾‾
 R and Matlab/SciPy use different conventions for the “Ward”, “centroid” and
 “median” methods. R assumes that the dissimilarity matrix consists of squared
 Euclidean distances, while Matlab and SciPy expect non-squared Euclidean

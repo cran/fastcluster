@@ -6,44 +6,50 @@ Copyright © 2011 Daniel Müllner
 
 Installation
 ‾‾‾‾‾‾‾‾‾‾‾‾
+Installation procedures were tested under 64-bit Ubuntu. CRAN also hosts
+precompiled binaries (of the R library, not the Python module) for Windows and
+MacOS X. In principle, it should be possible to install the fastcluster package
+on any system that has a C++ compiler and R respectively Python with
+NumPy. There are no unusual libraries needed to compile the package, only the
+STL library, which every C++ compiler should have by default.
 
-Installation procedures were tested under 64-bit Ubuntu. In principle, it should
-be possible to install the fastcluster package on any system that has a C++
-compiler and R respectively Python with NumPy.  There are no unusual libraries
-needed to compile the package, only the STL library, which every C++ compiler
-should have by default.
-
-Please send me feedback if you accomplish to install the fastcluster package
-under a different operating system from Linux or if you had to tweak the
-configuration!  I will the update the installation instructions and modify the
-package if needed (eg.  include the right compiler flags for various operating
-systems).
+Please send me feedback if you accomplish to install the fastcluster package on
+a different platform or if you needed to tweak the configuration! I will the
+update the installation instructions and modify the package if needed
+(eg. include the right compiler flags for various operating systems).
 
 
 Installation for R
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-Open a terminal, go to the directory with the downloaded archive file and type:
+Enter the command install.packages("fastcluster") in R, and R will download the package automatically, then install it. That's it!
 
-  R CMD INSTALL fastcluster_1.0.2.tar.gz
+If this does not work, please consult R's help function by typing ?INSTALL from within R or read the “R installation and administration” manual:
 
-You may need to precede the above command with sudo to gain administrator
-privileges. There are ways to install R packages without administrator
-privileges in your user directories. See this help page for example:
+    http://cran.r-project.org/doc/manuals/R-admin.html#Installing-packages
+
+For manual download, you can get the fastcluster package from the download page at CRAN:
+
+    http://cran.r-project.org/web/packages/fastcluster/
+
+You may need to start R with administrator rights to be able to install packages. There are ways to install R packages without administrator privileges in your user directories. See this help page for example:
 
   http://csg.sph.umich.edu/docs/R/localpackages.html
-
-If you need further help with the installation procedure, please consult R's
-help function by typing ?INSTALL from within R.
 
 
 Installation for Python
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-Make sure that you have Python and NumPy installed. Open a terminal, go to the
-directory with the downloaded file and extract the contents of the archive with:
+Make sure that you have Python and NumPy installed. If you have not done so
+already, download the fastcluster package from the R archive here:
 
-    tar -xvf fastcluster_1.0.2.tar.gz
+    http://cran.r-project.org/web/packages/fastcluster/
 
-This will generate a new directory fastcluster. Switch to its python
+Open a terminal, go to the directory with the downloaded file and extract the
+contents of the archive with:
+
+    tar -xvf fastcluster_(version).tar.gz
+
+Alternatively, use your favorite archive manager for unpacking, eg. on
+Windows. This will generate a new directory fastcluster. Switch to its python
 subdirectory:
 
     cd fastcluster/python/

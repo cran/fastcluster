@@ -11,7 +11,7 @@
 from numpy.distutils.core import setup, Extension
 
 setup(name='fastcluster', \
-      version='1.0.2', \
+      version='1.0.3', \
       py_modules=['fastcluster'], \
       description='Fast hierarchical clustering routines for R and Python.', \
       long_description="""
