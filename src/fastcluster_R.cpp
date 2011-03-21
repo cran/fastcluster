@@ -4,9 +4,6 @@
   Copyright © 2011 Daniel Müllner
   <http://math.stanford.edu/~muellner>
 */
-#define __STDC_LIMIT_MACROS
-#include <stdexcept>
-#include <stdint.h>
 #include <Rdefines.h>
 #include <R_ext/Rdynload.h>
 
@@ -110,7 +107,7 @@ void generate_R_dendrogram(int * merge, double * const height, int * const order
 */
 
 extern "C" {
-  SEXP Rcpp_linkage(SEXP N_, SEXP method_, SEXP D_, SEXP members_) {
+  SEXP fastcluster(SEXP N_, SEXP method_, SEXP D_, SEXP members_) {
     SEXP r = NULL; // return value
 
     try{
@@ -258,7 +255,7 @@ extern "C" {
   void R_init_fastcluster(DllInfo *info)
   {
     R_CallMethodDef callMethods[]  = {
-      {"Rcpp_linkage", (DL_FUNC) &Rcpp_linkage, 4},
+      {"fastcluster", (DL_FUNC) &fastcluster, 4},
       {NULL, NULL, 0}
     };
     R_registerRoutines(info, NULL, callMethods, NULL, NULL);

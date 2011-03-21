@@ -23,5 +23,15 @@ Version 1.0.3, 03/20/2011:
   • File README: Removed the warning about false results from the flashClust
     package since the new flashClust version 1.01 has this error corrected.
 
-  • Clean the test file fastcluster_test.R up. (No dependency on the MASS
+  • Cleaned the test file fastcluster_test.R up. (No dependence on the MASS
     package any more)
+
+Version 1.0.4, 03/21/2011:
+
+  • Changed the name of the external function from the outdated "Rcpp_linkage"
+    to "fastcluster".
+
+  • Registered the external function "fastcluster" in R.
+
+  • Configured the C header inclusions to work on Fedora (thanks to Peter
+    Langfelder).

@@ -12,7 +12,7 @@ hclust <- function(d, method="complete",  members = NULL)
     stop("Invalid clustering method.")
   if (method == -1)
     stop("Ambiguous clustering method.")
-  dendrogram <- c( .Call("Rcpp_linkage", attr(d, "Size"), method, d, members),
+  dendrogram <- c( .Call(fastcluster, attr(d, "Size"), method, d, members),
     list(
       labels = attr(d, "Labels")
       ,method = METHODS[method]

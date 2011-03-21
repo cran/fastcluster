@@ -21,17 +21,22 @@ update the installation instructions and modify the package if needed
 
 Installation for R
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-Enter the command install.packages("fastcluster") in R, and R will download the package automatically, then install it. That's it!
+Enter the command install.packages("fastcluster") in R, and R will download the
+package automatically, then install it. That's it!
 
-If this does not work, please consult R's help function by typing ?INSTALL from within R or read the “R installation and administration” manual:
+If this does not work, please consult R's help function by typing ?INSTALL from
+within R or read the “R installation and administration” manual:
 
     http://cran.r-project.org/doc/manuals/R-admin.html#Installing-packages
 
-For manual download, you can get the fastcluster package from the download page at CRAN:
+For manual download, you can get the fastcluster package from the download page
+at CRAN:
 
     http://cran.r-project.org/web/packages/fastcluster/
 
-You may need to start R with administrator rights to be able to install packages. There are ways to install R packages without administrator privileges in your user directories. See this help page for example:
+You may need to start R with administrator rights to be able to install
+packages. There are ways to install R packages without administrator privileges
+in your user directories. See this help page for example:
 
   http://csg.sph.umich.edu/docs/R/localpackages.html
 

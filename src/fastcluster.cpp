@@ -4,13 +4,31 @@
   Copyright © 2011 Daniel Müllner
   <http://math.stanford.edu/~muellner>
 */
-//#ifndef __STDC_LIMIT_MACROS
-//#define __STDC_LIMIT_MACROS
-//#endif
-//#include <stdint.h>
 #include <float.h>
+#ifndef DBL_MANT_DIG
+#error The constant DBL_MANT_DIG could not be defined.
+#endif
+
 #include <math.h>
 #include <algorithm>
+
+#ifndef LONG_MAX
+#include <limits.h>
+#endif
+#ifndef LONG_MAX
+#error The constant LONG_MAX could not be defined.
+#endif
+#ifndef INT_MAX
+#error The constant INT_MAX could not be defined.
+#endif
+
+#ifndef INT32_MAX
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
+#endif
+#ifndef INT32_MAX
+#error The constant INT32_MAX could not be defined.
+#endif
 
 typedef int_fast32_t t_index;
 #define MAX_INDEX INT32_MAX

@@ -1,2 +1,2 @@
-useDynLib(fastcluster)
+useDynLib(fastcluster, .registration=TRUE)
 export('hclust')
