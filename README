@@ -3,19 +3,22 @@ fastcluster: Fast hierarchical clustering routines for R and Python
 Copyright © 2011 Daniel Müllner
 <http://math.stanford.edu/~muellner>
 
-The fastcluster package is a C++ library for hierarchical (agglomerative)
-clustering on data with a dissimilarity index. It efficiently implements the
-seven most widely used clustering schemes: single, complete, average, weighted,
-Ward,centroid and median linkage. (The “weighted” distance update scheme
-(Matlab, SciPy) is also called “mcquitty” in R.) The library currently has
-interfaces to two languages: R and Python/SciPy. The interfaces are designed as
-drop-in replacements for the existing routines. Once the fastcluster library is
-loaded at the beginning of the code, every program that uses hierarchical
+The fastcluster package is a C++ library for hierarchical, agglomerative
+clustering. It efficiently implements the seven most widely used clustering
+schemes: single, complete, average, weighted/mcquitty, Ward, centroid and median
+linkage. The library currently has interfaces to two languages: R and Python/
+SciPy. Part of the functionality is designed as drop-in replacement for existing
+routines: “linkage” in the SciPy package “scipy.cluster.hierarchy”, “hclust” in
+R's “stats” package, and the “flashClust” package. Once the fastcluster library
+is loaded at the beginning of the code, every program that uses hierarchical
 clustering can benefit immediately and effortlessly from the performance gain.
+Moreover, there are memory-saving routines for clustering of vector data, which
+go beyond what the existing packages provide.
 
 See the author's home page <http://math.stanford.edu/~muellner> for more
 information, in particular a performance comparison with other clustering
-packages.
+packages. The User's manual is the file inst/doc/fastcluster_manual.pdf in the
+source distribution.
 
 The fastcluster package is licensed under the GNU General Public License (GPL)
 Version 3. See <http://www.gnu.org/licenses/gpl.html>
@@ -51,9 +54,15 @@ flashClust prior to version 1.01, update it! See the change log for flashClust:
 If you need to access the old function or make sure that the right function is
 called, specify the package as follows:
 
-    stats::hclust(…)
     fastcluster::hclust(…)
     flashClust::hclust(…)
+    stats::hclust(…)
+
+Vector data can be clustered with a memory-saving algorithm with the command
+
+    hclust.vector(…)
+
+See the User's manual inst/doc/fastcluster_manual.pdf for further details.
 
 WARNING
 ‾‾‾‾‾‾‾
@@ -63,14 +72,14 @@ Euclidean distances, while Matlab and SciPy expect non-squared Euclidean
 distances. The fastcluster package respects these conventions and uses different
 formulas in the two interfaces.
 
-If you want the same results in both interfaces, then feed R with the entry-wise
-square of the distance matrix, D^2, for the “Ward”, “centroid” and “median”
-methods and later take the square root of the height field in the
-dendrogram. For the “average” and “weighted” alias “mcquitty” methods, you must
-still take the same distance matrix D as in the Python interface for the same
-results. The “single” and “complete” methods only depend on the relative order
-of the distances, hence it does not make a difference whether one operates on
-the distances or the squared distances.
+If you want the same results in both interfaces, then feed the hclust function
+in R with the entry-wise square of the distance matrix, D^2, for the “Ward”,
+“centroid” and “median” methods and later take the square root of the height
+field in the dendrogram. For the “average” and “weighted” alias “mcquitty”
+methods, you must still take the same distance matrix D as in the Python
+interface for the same results. The “single” and “complete” methods only depend
+on the relative order of the distances, hence it does not make a difference
+whether the method operates on the distances or the squared distances.
 
 The code example in the R documentation (enter ?hclust or example(hclust) in R)
 contains an instance where the squared distance matrix is generated from
@@ -84,39 +93,50 @@ The fastcluster package is imported as usual by
 
 It provides the following functions:
 
-    linkage(D, method='single', metric='euclidean', preserve_input=True)
-    single(D)
-    complete(D)
-    average(D)
-    weighted(D)
-    ward(D)
-    centroid(D)
-    median(D)
+    linkage(X, method='single', metric='euclidean', preserve_input=True)
+    single(X)
+    complete(X)
+    average(X)
+    weighted(X)
+    ward(X)
+    centroid(X)
+    median(X)
+    linkage_vector(X, method='single', metric='euclidean', extraarg=None)
 
-The argument D is either a compressed distance matrix or a collection of m
-observation vectors in n dimensions as an (m×n) array. Apart from the argument
+The argument X is either a compressed distance matrix or a collection of n
+observation vectors in d dimensions as an (n×d) array. Apart from the argument
 preserve_input, the methods have the same input and output as the functions of
-the same name in the package scipy.cluster.hierarchy. Therefore, I do not
-duplicate the documentation and refer to the SciPy documentation for further
-details:
-
-    http://docs.scipy.org/doc/scipy/reference/cluster.hierarchy.html
-    http://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
+the same name in the package scipy.cluster.hierarchy.
 
 The additional, optional argument preserve_input specifies whether the
 fastcluster package first copies the distance matrix or writes into the existing
-array. If you generate the distance matrix only for the clustering step and do
-not need it afterwards, you may save half the memory by saying
-preserve_input=False.
+array. If the dissimilarities are generated for the clustering step only and are
+not needed afterward, approximately half the memory can be saved by specifying
+preserve_input=False. Note that the input array X contains unspecified values
+after this procedure. You may want to write
 
-Note that the input array D contains unspecified values after this
-procedure. You may want to write
+    linkage(X, method='…', preserve_input=False)
+    del X
 
-    linkage(D, method="…", preserve_distance=False)
-    del D
-
-to make sure that you do not accidentally use the matrix D after it has been
+to make sure that the matrix X is not accessed accidentally  after it has been
 used as scratch memory.
 
-The single linkage algorithm does not write to the distance matrix or its copy
-anyway, so the preserve_distance flag has no effect in this case.
+The method
+
+    linkage_vector(X, method='single', metric='euclidean', extraarg=None)
+
+provides memory-saving clustering for vector data. It also accepts a collection
+of n observation vectors in d dimensions as an (n×d) array as the first parameter.
+The parameter 'method' is either 'single', 'ward', 'centroid' or 'median'. The
+'ward', 'centroid' and 'median' methods require the Euclidean metric. In case of
+single linkage, the 'metric' parameter can be chosen from all metrics which are
+implemented in scipy.spatial.dist.pdist. There may be differences between
+
+    linkage(scipy.spatial.dist.pdist(X, metric='…'))
+and
+    linkage_vector(X, metric='…')
+
+since there have been made a few corrections compared to the pdist function.
+Please consult the the User's manual inst/doc/fastcluster_manual.pdf for
+comprehensive details.
+

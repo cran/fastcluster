@@ -35,3 +35,11 @@ Version 1.0.4, 03/21/2011:
 
   • Configured the C header inclusions to work on Fedora (thanks to Peter
     Langfelder).
+
+Version 1.1.0, 08/21/2011
+
+  • Routines for clustering vector data.
+
+  • Added a User's manual
+
+  • Revision of all files

@@ -9,14 +9,14 @@ Installation
 Installation procedures were tested under 64-bit Ubuntu. CRAN also hosts
 precompiled binaries (of the R library, not the Python module) for Windows and
 MacOS X. In principle, it should be possible to install the fastcluster package
-on any system that has a C++ compiler and R respectively Python with
-NumPy. There are no unusual libraries needed to compile the package, only the
-STL library, which every C++ compiler should have by default.
+on any system that has a C++ compiler and R respectively Python with NumPy.
+There are no unusual libraries needed to compile the package, only the STL
+library, which every C++ compiler should have by default.
 
 Please send me feedback if you accomplish to install the fastcluster package on
-a different platform or if you needed to tweak the configuration! I will the
-update the installation instructions and modify the package if needed
-(eg. include the right compiler flags for various operating systems).
+a certain platform but needed to tweak the configuration! I will update the
+installation instructions and modify the package if needed (eg. include the
+right compiler flags for various operating systems).
 
 
 Installation for R
@@ -54,8 +54,8 @@ contents of the archive with:
     tar -xvf fastcluster_(version).tar.gz
 
 Alternatively, use your favorite archive manager for unpacking, eg. on
-Windows. This will generate a new directory fastcluster. Switch to its python
-subdirectory:
+Windows. This will generate a new directory “fastcluster”. Switch to its 
+“python” subdirectory:
 
     cd fastcluster/python/
 
@@ -63,10 +63,10 @@ Now compile and install the Python module by:
 
     python setup.py install
 
-Again, you may need to precede this command with sudo or install the package in
-your home directory. For example, the line
+You may need to precede this command with sudo or install the package in your
+home directory. For example, the line
 
-    python setup.py install --home=~
+    python setup.py install --user
 
 installs the package in the path lib/python/ under your home directory. See the
 chapter “Installing Python modules” in the Python documentation for further
