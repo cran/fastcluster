@@ -43,3 +43,14 @@ Version 1.1.0, 08/21/2011
   • Added a User's manual
 
   • Revision of all files
+
+Version 1.1.1, 10/08/2011
+
+  • Fixed test scripts, which indicated an error on some architectures, even
+    if results were correct. (The assumption was that ties in single linkage
+    clustering are resolved in the same way, both for dissimilarity input and
+    for vector input. This is not necessarily true if the floating point unit
+    uses "excess precision". Now the test scripts are content with arbitrary
+    resolution of ties and do not assume a specific scheme.)
+
+  • Bug fix: uninitialized function pointer in Version 1.1.0

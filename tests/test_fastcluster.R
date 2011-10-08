@@ -17,23 +17,6 @@ reproducible, you must include the following number (the random seed value) in
 your error report: %d.\n\n', seed))
 }
 
-# Compare two dendrograms and check whether they are exactly equal.
-compare.exact <- function(dg1, dg2) {
-  if (!identical(dg1$height,dg2$height)) {
-    cat('Height vectors differ!\n')
-    return(FALSE)
-  }
-  if (!identical(dg1$merge,dg2$merge)) {
-    cat('Merge matrices differ!\n')
-    return(FALSE)
-  }
-  if (!identical(dg1$order,dg2$order)) {
-    cat('Order vectors differ!\n')
-    return(FALSE)
-  }
-  return(TRUE)
-}
-
 # Compare two dendrograms and check whether they are equal, except that
 # ties may be resolved differently.
 compare <- function(dg1, dg2) {
@@ -161,7 +144,7 @@ test.vector <-  function() {
       cat('Input array was corrupted!\n')
       stop(print_seed())
     }
-    if (!compare.exact(dg_fastcluster_dist, dg_fastcluster)) {
+    if (!compare(dg_fastcluster_dist, dg_fastcluster)) {
       stop(print_seed())
     }
   }
@@ -176,7 +159,7 @@ test.vector <-  function() {
     # Workaround: fastcluster::hclust expects _squared_ euclidean distances.
     d = d^2
     d2 = d
-    dg_fastcluster_dist       = fastcluster::hclust(d, method=method)
+    dg_fastcluster_dist = fastcluster::hclust(d, method=method)
     if (!identical(d,d2)) {
       cat('Input array was corrupted!\n')
       stop(print_seed())
@@ -214,7 +197,7 @@ test.vector.binary <- function() {
     cat('Input array was corrupted!\n')
     stop(print_seed())
   }
-  if (!compare.exact(dg_fastcluster_dist, dg_fastcluster)) {
+  if (!compare(dg_fastcluster_dist, dg_fastcluster)) {
     stop(print_seed())
   }
   cat('Passed.\n')

@@ -163,7 +163,7 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
     if (method==METHOD_METR_WARD ||
         method==METHOD_METR_CENTROID ||
         method==METHOD_METR_MEDIAN) {
-      for (long_index i=0; i<static_cast<long_index>(N)*(N-1)/2; i++)
+      for (ssize_t i=0; i < static_cast<ssize_t>(N)*(N-1)/2; i++)
         D_[i] *= D_[i];
     }
 
@@ -270,7 +270,7 @@ class python_dissimilarity {
 private:
   t_float * Xa;
   auto_array_ptr<t_float> Xnew;
-  long_index dim; // long index saves many statis_cast<> in products
+  ssize_t dim; // size_t saves many statis_cast<> in products
   t_index N;
   t_index * members;
   void (cluster_result::*postprocessfn) (const t_float) const;
@@ -809,7 +809,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
       PyErr_SetString(PyExc_ValueError,
                       "The input array must be two-dimensional.");
     }
-    long int const N = X->dimensions[0];
+    npy_intp const N = X->dimensions[0];
     if (N < 1 ) {
       // N must be at least 1.
       PyErr_SetString(PyExc_ValueError,
@@ -817,7 +817,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
       throw pythonerror();
     }
 
-    long int const dim = X->dimensions[1];
+    npy_intp const dim = X->dimensions[1];
     if (dim < 1 ) {
       PyErr_SetString(PyExc_ValueError,
                       "Invalid dimension of the data set.");

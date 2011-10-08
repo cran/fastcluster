@@ -45,7 +45,6 @@ typedef int_fast32_t t_index;
 #if (INT_MAX > MAX_INDEX)
 #error The integer format "int" must not have a greater range than "t_index".
 #endif
-typedef int_fast64_t long_index;
 typedef double t_float;
 #define T_FLOAT_MANT_DIG DBL_MANT_DIG
 
@@ -207,11 +206,11 @@ public:
     // Initialize to the given size.
     : succ(size+1), pred(size+1)
   {
-    for (t_index i=1; i<size+1; i++)
-      pred[i] = i-1;
-    // pred[0] is never accessed!
-    for (t_index i=0; i<size; i++)
+    for (t_index i=0; i<size; i++) {
+      pred[i+1] = i;
       succ[i] = i+1;
+    }
+    // pred[0] is never accessed!
     //succ[size] is never accessed!
     start = 0;
     end = size;
@@ -249,10 +248,10 @@ public:
 };
 
 // Indexing functions
-// D is the upper triangular part of a symmetric  N x N matrix
-// We require r_ > c_ !
-#define D_(r_,c_) ( D[(static_cast<long_index>(2*N-3-(r_))*(r_)>>1)-1+(c_)] )
-// Z is a (N-1) x 4 array
+// D is the upper triangular part of a symmetric (NxN)-matrix
+// We require r_ < c_ !
+#define D_(r_,c_) ( D[(static_cast<ssize_t>(2*N-3-(r_))*(r_)>>1)+(c_)-1] )
+// Z is an ((N-1)x4)-array
 #define Z_(_r, _c) (Z[(_r)*4 + (_c)])
 
 /*
@@ -642,8 +641,10 @@ public:
     // 3rd ed., 2009, Section 6.3 “Building a heap”
     t_index idx;
     this->A = A;
-    for (idx=(size>>1)-1; idx>=0; idx--)
+    for (idx=(size>>1); idx>0; ) {
+      idx--;
       update_geq_(idx);
+    }
   }
 
   inline operator t_index() const {

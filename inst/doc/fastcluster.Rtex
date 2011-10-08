@@ -85,8 +85,8 @@
 %\VignetteIndexEntry{User's manual}
 \title{The \textit{fastcluster} package: User's manual}
 \author{\href{http://math.stanford.edu/~muellner}{Daniel Müllner}}
-\date{August 21, 2011}
-\subtitle{Version 1.1.0}
+\date{October 8, 2011}
+\subtitle{Version 1.1.1}
 \maketitle
 
 \makeatletter
@@ -113,7 +113,7 @@ This document describes the usage for the two interfaces for R and Python and is
 
 If you use the fastcluster package for scientific work, please cite it as:
 \begin{quote}
-Daniel Müllner, \textit{fastcluster: Fast hierarchical clustering routines for R and Python}, Version 1.1.0, 2011. Available at CRAN \url{http://cran.r-project.org} and \url{http:///math.stanford.edu/~muellner}.
+Daniel Müllner, \textit{fastcluster: Fast hierarchical clustering routines for R and Python}, Version 1.1.1, 2011. Available at CRAN \url{http://cran.r-project.org} and \url{http:///math.stanford.edu/~muellner}.
 \end{quote}
 
 \tableofcontents
@@ -277,11 +277,11 @@ The call
 \begin{quote}
 \texttt{hclust.vector(X, method=\q single\q, metric=[...])}
 \end{quote}
-gives the same result as
+is equivalent to
 \begin{quote}
 \texttt{hclust(dist(X, metric=[...]), method=\q single\q)}
 \end{quote}
-but uses less memory and is equally fast.
+but uses less memory and is equally fast. Ties may be resolved differently, ie.\ if two pairs of nodes have equal, minimal dissimilarity values at some point, in the specific computer's representation for floating point numbers, either pair may be chosen for the next merging step in the dendrogram.
 
 If \textit{method} is one of \textit{\q centroid\q}, \textit{\q median\q}, \textit{\q ward\q}, clustering is performed with respect to Euclidean distances. In this case, the parameter \textit{metric} must be \textit{\q euclidean\q}. Notice that \texttt{hclust.vector} operates on Euclidean distances for compatibility reasons with the \dist{} method, while \hyperref[hclust]{\texttt{hclust}} assumes \textbf{squared} Euclidean distances for compatibility with the \href{http://stat.ethz.ch/R-manual/R-patched/library/stats/html/hclust.html}{\texttt{stats::hclust}} method! Hence, the call
 \phantomsection\label{squared}
@@ -295,7 +295,7 @@ is, aside from the lesser memory requirements, equivalent to
 \texttt{hc\$height = sqrt(hc\$height)}
 \end{quote}
 The same applies to the \textit{\q centroid\q} and  \textit{\q median\q} methods.
-Differences may arise only from rounding errors due to squaring and taking the square root (which may, however, in extreme cases affect the entire clustering result due to the inherently unstable nature of the clustering schemes).
+Differences may arise only from the resolution of ties (which may, however, in extreme cases affect the entire clustering result due to the inherently unstable nature of the clustering schemes).
 \end{methods}
 \section{The Python interface}
 
@@ -358,11 +358,13 @@ The optional argument \textit{preserve\_input} specifies whether the method make
 to make sure that the matrix $X$ is not accessed accidentally  after it has been
 used as scratch memory. (The single linkage algorithm does not write to the distance matrix or its copy anyway, so the \textit{preserve\_input} flag has no effect in this case.)
 
-If $X$ contains vector data, it must be a two-dimensional array with $N$ observations in $D$ dimensions as an $(N\times D)$ array. The  \textit{preserve\_input} argument is ignored in this case. The specified \textit{metric} is used to generate pairwise distances from the input. The following two function calls yield the same output:
+If $X$ contains vector data, it must be a two-dimensional array with $N$ observations in $D$ dimensions as an $(N\times D)$ array. The  \textit{preserve\_input} argument is ignored in this case. The specified \textit{metric} is used to generate pairwise distances from the input. The following two function calls yield equivalent output:
 \begin{verbatim}
     linkage(pdist(X, metric), method="...", preserve_input=False)
     linkage(X, metric=metric, method="...")
 \end{verbatim}
+
+The two results are identical in most cases, but differences occur if ties are resolved differently: if the minimum in step 2 below is attained for more than one pair of nodes, either pair may be chosen. It is not guaranteed that both \texttt{linkage} variants choose the same pair in this case.
 
 The general scheme of the agglomerative clustering procedure is as follows:
 \begin{enumerate}
