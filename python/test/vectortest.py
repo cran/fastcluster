@@ -22,7 +22,7 @@ def print_seed():
   print("Seed: {0}".format(seed))
 atexit.register(print_seed)
 
-seed  = np.random.randint(0,1e10)
+seed  = np.random.randint(0,1e9)
 
 print_seed()
 np.random.seed(seed)

@@ -28,6 +28,8 @@ compare <- function(dg1, dg2) {
   rel_error <-  max(rdiffs)
   # We allow a relative error of 1e-13.
   if (rel_error>1e-13) {
+    print(h1)
+    print(h2)
     cat(sprintf('Height vectors differ! The maximum relative error is %e.\n', rel_error))
     return(FALSE)
   }
@@ -139,7 +141,7 @@ test.vector <-  function() {
       d = dist(pcd, method=metric)
     }
     d2 = d
-    dg_fastcluster_dist       = fastcluster::hclust(d, method=method)
+    dg_fastcluster_dist = fastcluster::hclust(d, method=method)
     if (!identical(d,d2) || !identical(pcd,pcd2)) {
       cat('Input array was corrupted!\n')
       stop(print_seed())

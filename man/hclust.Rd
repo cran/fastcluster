@@ -19,7 +19,7 @@ This function implements hierarchical clustering with the same interface as \cod
   \code{\link[stats:hclust]{hclust}} in the \pkg{\link{stats}} package.
 
    A comprehensive User's manual
-    \href{../doc/fastcluster.pdf}{fastcluster.pdf} is available as a vignette. Get this from the R command line with \code{vignette('fastcluster')}.
+    \href{http://cran.r-project.org/web/packages/fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf} is available as a vignette. Get this from the R command line with \code{vignette('fastcluster')}.
 }
 \references{\url{http://math.stanford.edu/~muellner}}
 \author{Daniel Müllner}

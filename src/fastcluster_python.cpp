@@ -163,7 +163,7 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
     if (method==METHOD_METR_WARD ||
         method==METHOD_METR_CENTROID ||
         method==METHOD_METR_MEDIAN) {
-      for (ssize_t i=0; i < static_cast<ssize_t>(N)*(N-1)/2; i++)
+      for (ptrdiff_t i=0; i < static_cast<ptrdiff_t>(N)*(N-1)/2; i++)
         D_[i] *= D_[i];
     }
 
@@ -270,7 +270,7 @@ class python_dissimilarity {
 private:
   t_float * Xa;
   auto_array_ptr<t_float> Xnew;
-  ssize_t dim; // size_t saves many statis_cast<> in products
+  ptrdiff_t dim; // size_t saves many statis_cast<> in products
   t_index N;
   t_index * members;
   void (cluster_result::*postprocessfn) (const t_float) const;
@@ -474,16 +474,7 @@ public:
     return Xa+i*dim+j;
   }
 
-  void merge(const t_index i, const t_index j) const {
-    for(t_index k=0; k<dim; k++) {
-      *(Xptr(j,k)) = (X(i,k)*static_cast<t_float>(members[i]) +
-                      X(j,k)*static_cast<t_float>(members[j])) /
-        static_cast<t_float>(members[i]+members[j]);
-    }
-    members[j] += members[i];
-  }
-
-  void merge_extended(const t_index i, const t_index j, const t_index newnode) const {
+  void merge(const t_index i, const t_index j, const t_index newnode) const {
     t_float const * Pi = i<N ? Xa+i*dim : Xnew+(i-N)*dim;
     t_float const * Pj = j<N ? Xa+j*dim : Xnew+(j-N)*dim;
     for(t_index k=0; k<dim; k++) {
@@ -494,7 +485,7 @@ public:
     members[newnode] = members[i]+members[j];
   }
 
-  void merge_extended_weighted(const t_index i, const t_index j, const t_index newnode) const {
+  void merge_weighted(const t_index i, const t_index j, const t_index newnode) const {
     t_float const * Pi = i<N ? Xa+i*dim : Xnew+(i-N)*dim;
     t_float const * Pj = j<N ? Xa+j*dim : Xnew+(j-N)*dim;
     for(t_index k=0; k<dim; k++) {
@@ -842,10 +833,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
     cluster_result Z2(N-1);
 
     auto_array_ptr<t_index> members;
-    if (method==METHOD_METR_WARD) {
-      members.init(N, 1);
-    }
-    else if (method==METHOD_METR_CENTROID) {
+    if (method==METHOD_METR_WARD || method==METHOD_METR_CENTROID) {
       members.init(2*N-1, 1);
     }
 
@@ -874,8 +862,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
       throw pythonerror();
     }
 
-    bool temp_point_array =
-      (method==METHOD_METR_CENTROID || method==METHOD_METR_MEDIAN);
+    bool temp_point_array = (method!=METHOD_METR_SINGLE);
 
     python_dissimilarity dist(X, members, method, metric, extraarg,
                               temp_point_array);
@@ -885,8 +872,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
       MST_linkage_core_vector(N, dist, Z2);
       break;
     case METHOD_METR_WARD:
-      NN_chain_core_vector(N, dist, Z2);
-      //generic_linkage_vector<METHOD_METR_WARD>(N, dist, Z2);
+      generic_linkage_vector<METHOD_METR_WARD>(N, dist, Z2);
       break;
     case METHOD_METR_CENTROID:
       generic_linkage_vector<METHOD_METR_CENTROID>(N, dist, Z2);
@@ -907,8 +893,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
     dist.postprocess(Z2);
 
     t_float * const Z_ = reinterpret_cast<t_float *>(Z->data);
-    if (method==METHOD_METR_CENTROID ||
-        method==METHOD_METR_MEDIAN) {
+    if (method!=METHOD_METR_SINGLE) {
       generate_SciPy_dendrogram<true>(Z_, Z2, N);
     }
     else {

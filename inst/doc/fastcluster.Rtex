@@ -85,8 +85,8 @@
 %\VignetteIndexEntry{User's manual}
 \title{The \textit{fastcluster} package: User's manual}
 \author{\href{http://math.stanford.edu/~muellner}{Daniel Müllner}}
-\date{October 8, 2011}
-\subtitle{Version 1.1.1}
+\date{October 11, 2011}
+\subtitle{Version 1.1.2}
 \maketitle
 
 \makeatletter

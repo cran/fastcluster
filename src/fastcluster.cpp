@@ -194,7 +194,7 @@ class doubly_linked_list {
     for (i=somevalue; L<size; i=L.succ[I])
   */
 public:
-  t_index start, end;
+  t_index start;
   auto_array_ptr<t_index> succ;
 
 private:
@@ -213,7 +213,6 @@ public:
     // pred[0] is never accessed!
     //succ[size] is never accessed!
     start = 0;
-    end = size;
   }
 
   void remove(const t_index idx) {
@@ -228,20 +227,6 @@ public:
     succ[idx] = 0; // Mark as inactive
   }
 
-  // Insert an element at the end of the list.
-  // Do not use this method if the order of elements must be preserved!
-  void insert(const t_index idx) {
-    if (start==end) {
-      start=idx;
-    }
-    else {
-      pred[idx] = pred[end];
-      succ[pred[idx]] = idx;
-    }
-    pred[end] = idx;
-    succ[idx] = end;
-  }
-
   bool is_inactive(t_index idx) const {
     return (succ[idx]==0);
   }
@@ -250,7 +235,7 @@ public:
 // Indexing functions
 // D is the upper triangular part of a symmetric (NxN)-matrix
 // We require r_ < c_ !
-#define D_(r_,c_) ( D[(static_cast<ssize_t>(2*N-3-(r_))*(r_)>>1)+(c_)-1] )
+#define D_(r_,c_) ( D[(static_cast<ptrdiff_t>(2*N-3-(r_))*(r_)>>1)+(c_)-1] )
 // Z is an ((N-1)x4)-array
 #define Z_(_r, _c) (Z[(_r)*4 + (_c)])
 
@@ -1204,109 +1189,6 @@ static void MST_linkage_core_vector(const t_index N,
   }
 }
 
-template <typename t_dissimilarity>
-static void NN_chain_core_vector(const t_index N,
-                                    t_dissimilarity & dist,
-                                    cluster_result & Z2) {
-  /*
-    N: integer, number of data points
-    dist: function pointer to the metric
-    Z2: output data structure
-
-    This is the NN-chain algorithm, described on page 86 in the following book:
-
-﻿   Fionn Murtagh, Multidimensional Clustering Algorithms,
-    Vienna, Würzburg: Physica-Verlag, 1985.
-
-    This algorithm is only valid for the "Ward" distance update method!
-
-    This implementation should handle Inf values correctly (designed to
-    do so but not tested).
-
-    This implementation avoids NaN if possible. It treats NaN as if it was
-    greater than +Infinity, ie. whenever we find a non-NaN value, this is
-    preferred in all the minimum-distance searches.
-  */
-  t_index i;
-
-  auto_array_ptr<t_index> NN_chain(N);
-  t_index NN_chain_tip = 0;
-
-  t_index idx1, idx2;
-
-  doubly_linked_list AR(N);
-
-  t_float min;
-
-  for (t_index j=0; j<N-1; j++) {
-    if (NN_chain_tip <= 3) {
-      if (NN_chain_tip == 3) {
-        AR.insert(NN_chain[0]);
-      }
-
-      NN_chain[0] = idx1 = AR.start;
-      NN_chain_tip = 1;
-
-      idx2 = AR.succ[idx1];
-      min = dist.ward(idx1,idx2);
-      for (i=AR.succ[idx2]; min!=min && i!=AR.end; i=AR.succ[i]) { // eliminate NaNs
-        min = dist.ward(idx1,i);
-        idx2 = i;
-      }
-      for ( ; i!=AR.end; i=AR.succ[i]) {
-        t_float tmp = dist.ward(idx1,i);
-        if (tmp < min) {
-          min = tmp;
-          idx2 = i;
-        }
-      }
-      AR.remove(idx1);
-      AR.remove(idx2);
-    }  // a: idx1   b: idx2
-    else {
-      NN_chain_tip -= 3;
-      idx1 = NN_chain[NN_chain_tip-1];
-      idx2 = NN_chain[NN_chain_tip];
-      min = dist.ward(idx1,idx2);
-    }  // a: idx1   b: idx2
-
-    do {
-      NN_chain[NN_chain_tip] = idx2;
-
-      for (i=AR.start; min!=min && i!=AR.end; i=AR.succ[i]) { // eliminate NaNs
-        min = dist.ward(idx2,i);
-        idx1 = i;
-      }
-      for ( ; i!=AR.end; i=AR.succ[i]) {
-        t_float tmp = dist.ward(idx2,i);
-        if (tmp < min) {
-          min = tmp;
-          idx1 = i;
-        }
-      }
-
-      if (idx1!=NN_chain[NN_chain_tip-1]) {
-        AR.remove(idx1);
-      }
-
-      idx2 = idx1;
-      idx1 = NN_chain[NN_chain_tip++];
-
-    } while (idx2 != NN_chain[NN_chain_tip-2]);
-
-    if (idx1>idx2) {
-      t_index tmp = idx1;
-      idx1 = idx2;
-      idx2 = tmp;
-    }
-
-    Z2.append(idx1, idx2, min);
-    dist.merge(idx1, idx2);
-    AR.insert(idx2);
-
-  }
-}
-
 template <const unsigned char method, typename t_dissimilarity>
 static void generic_linkage_vector(const t_index N,
                                    t_dissimilarity & dist,
@@ -1438,11 +1320,11 @@ static void generic_linkage_vector(const t_index N,
       switch (method) {
       case METHOD_METR_WARD:
       case METHOD_METR_CENTROID:
-        dist.merge_extended(idx1, idx2, i);
+        dist.merge(idx1, idx2, i);
         break;
 
       case METHOD_METR_MEDIAN:
-        dist.merge_extended_weighted(idx1, idx2, i);
+        dist.merge_weighted(idx1, idx2, i);
         break;
       }
 

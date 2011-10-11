@@ -18,7 +18,7 @@ def print_seed():
   print("Seed: {0}".format(seed))
 atexit.register(print_seed)
 
-seed = np.random.randint(0,1e10)
+seed = np.random.randint(0,1e9)
 
 np.random.seed(seed)
 #abstol = 1e-14 # absolute tolerance

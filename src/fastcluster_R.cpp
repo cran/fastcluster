@@ -126,7 +126,7 @@ enum {
 class R_dissimilarity {
 private:
   t_float * Xa;
-  ssize_t dim; // ssize_t saves many statis_cast<> in products
+  ptrdiff_t dim; // ptrdiff_t saves many statis_cast<> in products
   int * members;
   void (cluster_result::*postprocessfn) (const t_float) const;
   t_float postprocessarg;
@@ -212,7 +212,7 @@ public:
     return Xa+i*dim+j;
   }
 
-  void merge(const t_index i, const t_index j) const {
+  void merge2(const t_index i, const t_index j) const {
     for(t_index k=0; k<dim; k++) {
       *(Xptr(j,k)) = (X(i,k)*static_cast<t_float>(members[i]) +
                       X(j,k)*static_cast<t_float>(members[j])) /
@@ -221,12 +221,12 @@ public:
     members[j] += members[i];
   }
 
-  void merge_extended(const t_index i, const t_index j, const t_index newnode) const {
-    merge(row_repr[i], row_repr[j]);
+  void merge(const t_index i, const t_index j, const t_index newnode) const {
+    merge2(row_repr[i], row_repr[j]);
     row_repr[newnode] = row_repr[j];
   }
 
-  void merge_extended_weighted(const t_index i, const t_index j, const t_index newnode) const {
+  void merge_weighted(const t_index i, const t_index j, const t_index newnode) const {
     t_float * const Pi = Xa+row_repr[i]*dim;
     t_float * const Pj = Xa+row_repr[j]*dim;
     for(t_index k=0; k<dim; k++) {
@@ -241,16 +241,14 @@ public:
     }
   }
 
-  double ward(t_index i1, t_index i2) const {
+  double ward(t_index const i1, t_index const i2) const {
     t_float const mi = static_cast<t_float>(members[i1]);
     t_float const mj = static_cast<t_float>(members[i2]);
     return sqeuclidean(i1,i2)*mi*mj/(mi+mj);
   }
 
   double ward_extended(t_index i1, t_index i2) const {
-    t_float const mi = static_cast<t_float>(members[i1]);
-    t_float const mj = static_cast<t_float>(members[i2]);
-    return sqeuclidean_extended(i1,i2)*mi*mj/(mi+mj);
+    return ward(row_repr[i1], row_repr[i2]);
   }
 
   /*
@@ -468,7 +466,7 @@ extern "C" {
       const int N = *INTEGER_POINTER(N_);
       if (N<2)
         Rf_error("N must be at least 2.");
-      const ssize_t NN = static_cast<ssize_t>(N)*(N-1)/2;
+      const ptrdiff_t NN = static_cast<ptrdiff_t>(N)*(N-1)/2;
       UNPROTECT(1); // N_
 
       // Parameter method: dissimilarity index update method
@@ -510,7 +508,7 @@ extern "C" {
       auto_array_ptr<double> D__;
       if (method!=METHOD_METR_SINGLE) {
         D__.init(NN);
-        for (ssize_t i=0; i<NN; i++)
+        for (ptrdiff_t i=0; i<NN; i++)
           D__[i] = D[i];
       }
       UNPROTECT(1); // D_
@@ -648,8 +646,8 @@ extern "C" {
       // to C-contiguous style
       // (Waste of memory for 'single'; the other methods need a copy
       auto_array_ptr<double> X(LENGTH(X_));
-      for (ssize_t i=0; i<N; i++)
-        for (ssize_t j=0; j<dim; j++)
+      for (ptrdiff_t i=0; i<N; i++)
+        for (ptrdiff_t j=0; j<dim; j++)
           X[i*dim+j] = X__[i+j*N];
 
       UNPROTECT(2); // dims_, X_
@@ -690,7 +688,7 @@ extern "C" {
       // The generic_linkage_vector algorithm uses labels N,N+1,... for the
       // new nodes, so we need a table which node is stored in which row.
       bool make_row_repr =
-        (method==METHOD_VECTOR_CENTROID || method==METHOD_VECTOR_MEDIAN);
+        (method!=METHOD_VECTOR_SINGLE);
 
       R_dissimilarity dist(X, N, dim, members,
                            static_cast<unsigned char>(method),
@@ -708,7 +706,7 @@ extern "C" {
         break;
 
       case METHOD_VECTOR_WARD:
-        NN_chain_core_vector(N, dist, Z2);
+        generic_linkage_vector<METHOD_METR_WARD>(N, dist, Z2);
         break;
 
       case METHOD_VECTOR_CENTROID:
@@ -743,11 +741,10 @@ extern "C" {
       PROTECT(o = NEW_INTEGER(N));
       int * const order = INTEGER_POINTER(o);
 
-      if (method==METHOD_VECTOR_CENTROID ||
-          method==METHOD_VECTOR_MEDIAN)
-        generate_R_dendrogram<true>(merge, height, order, Z2, N);
-      else
+      if (method==METHOD_VECTOR_SINGLE)
         generate_R_dendrogram<false>(merge, height, order, Z2, N);
+      else
+        generate_R_dendrogram<true>(merge, height, order, Z2, N);
 
       SEXP n; // names
       PROTECT(n = NEW_CHARACTER(3));

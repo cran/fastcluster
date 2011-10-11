@@ -31,7 +31,7 @@ source distribution.
     \code{\link{hclust.vector}}
 
     \item A comprehensive User's manual:
-    \href{../doc/fastcluster.pdf}{fastcluster.pdf}. Get this from the R
+    \href{http://cran.r-project.org/web/packages/fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf}. Get this from the R
     command line with \code{vignette('fastcluster')}.
 
     \item See the author's home page for a performance comparison:

@@ -42,7 +42,7 @@ This function implements hierarchical, agglomerative clustering with memory-savi
   The same applies to the \code{"centroid"} and \code{"median"} methods.
 
   More details are in the User's manual
-  \href{../doc/fastcluster.pdf}{fastcluster.pdf}, which is available as
+  \href{http://cran.r-project.org/web/packages/fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf}, which is available as
   a vignette. Get this from the R command line with
   \code{vignette('fastcluster')}.
 }

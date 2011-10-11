@@ -54,3 +54,15 @@ Version 1.1.1, 10/08/2011
     resolution of ties and do not assume a specific scheme.)
 
   • Bug fix: uninitialized function pointer in Version 1.1.0
+
+Version 1.1.2, 10/11/2011
+
+  • Fix for Solaris: replaced ssize_t by ptrdiff_t in the C++ code.
+
+  • Removed the NN-chain algorithm for vector input: it was not clear that
+    it would work under all circumstances with the intricacies of floating-
+    point arithmetic. Especially the effects of the excess precision on the
+    x87 are impossible to control in a portable way. Now, the memory-saving
+    routines for the “Ward” linkage use the generic algorithm, as “centroid”
+    and “median” linkage do.
+
