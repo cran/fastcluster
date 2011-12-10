@@ -85,8 +85,8 @@
 %\VignetteIndexEntry{User's manual}
 \title{The \textit{fastcluster} package: User's manual}
 \author{\href{http://math.stanford.edu/~muellner}{Daniel Müllner}}
-\date{October 11, 2011}
-\subtitle{Version 1.1.2}
+\date{December 10, 2011}
+\subtitle{Version 1.1.3}
 \maketitle
 
 \makeatletter
@@ -113,7 +113,7 @@ This document describes the usage for the two interfaces for R and Python and is
 
 If you use the fastcluster package for scientific work, please cite it as:
 \begin{quote}
-Daniel Müllner, \textit{fastcluster: Fast hierarchical clustering routines for R and Python}, Version 1.1.1, 2011. Available at CRAN \url{http://cran.r-project.org} and \url{http:///math.stanford.edu/~muellner}.
+Daniel Müllner, \textit{fastcluster: Fast hierarchical clustering routines for R and Python}, Version 1.1.3, 2011. Available at CRAN \url{http://cran.r-project.org} and \url{http:///math.stanford.edu/~muellner}.
 \end{quote}
 
 \tableofcontents

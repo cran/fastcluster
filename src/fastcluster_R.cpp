@@ -126,7 +126,7 @@ enum {
 class R_dissimilarity {
 private:
   t_float * Xa;
-  ptrdiff_t dim; // ptrdiff_t saves many statis_cast<> in products
+  std::ptrdiff_t dim; // std::ptrdiff_t saves many statis_cast<> in products
   int * members;
   void (cluster_result::*postprocessfn) (const t_float) const;
   t_float postprocessarg;
@@ -466,7 +466,7 @@ extern "C" {
       const int N = *INTEGER_POINTER(N_);
       if (N<2)
         Rf_error("N must be at least 2.");
-      const ptrdiff_t NN = static_cast<ptrdiff_t>(N)*(N-1)/2;
+      const std::ptrdiff_t NN = static_cast<std::ptrdiff_t>(N)*(N-1)/2;
       UNPROTECT(1); // N_
 
       // Parameter method: dissimilarity index update method
@@ -508,7 +508,7 @@ extern "C" {
       auto_array_ptr<double> D__;
       if (method!=METHOD_METR_SINGLE) {
         D__.init(NN);
-        for (ptrdiff_t i=0; i<NN; i++)
+        for (std::ptrdiff_t i=0; i<NN; i++)
           D__[i] = D[i];
       }
       UNPROTECT(1); // D_
@@ -646,8 +646,8 @@ extern "C" {
       // to C-contiguous style
       // (Waste of memory for 'single'; the other methods need a copy
       auto_array_ptr<double> X(LENGTH(X_));
-      for (ptrdiff_t i=0; i<N; i++)
-        for (ptrdiff_t j=0; j<dim; j++)
+      for (std::ptrdiff_t i=0; i<N; i++)
+        for (std::ptrdiff_t j=0; j<dim; j++)
           X[i*dim+j] = X__[i+j*N];
 
       UNPROTECT(2); // dims_, X_

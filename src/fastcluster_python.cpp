@@ -163,7 +163,7 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
     if (method==METHOD_METR_WARD ||
         method==METHOD_METR_CENTROID ||
         method==METHOD_METR_MEDIAN) {
-      for (ptrdiff_t i=0; i < static_cast<ptrdiff_t>(N)*(N-1)/2; i++)
+      for (std::ptrdiff_t i=0; i < static_cast<std::ptrdiff_t>(N)*(N-1)/2; i++)
         D_[i] *= D_[i];
     }
 
@@ -270,7 +270,7 @@ class python_dissimilarity {
 private:
   t_float * Xa;
   auto_array_ptr<t_float> Xnew;
-  ptrdiff_t dim; // size_t saves many statis_cast<> in products
+  std::ptrdiff_t dim; // size_t saves many statis_cast<> in products
   t_index N;
   t_index * members;
   void (cluster_result::*postprocessfn) (const t_float) const;

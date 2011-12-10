@@ -235,7 +235,7 @@ public:
 // Indexing functions
 // D is the upper triangular part of a symmetric (NxN)-matrix
 // We require r_ < c_ !
-#define D_(r_,c_) ( D[(static_cast<ptrdiff_t>(2*N-3-(r_))*(r_)>>1)+(c_)-1] )
+#define D_(r_,c_) ( D[(static_cast<std::ptrdiff_t>(2*N-3-(r_))*(r_)>>1)+(c_)-1] )
 // Z is an ((N-1)x4)-array
 #define Z_(_r, _c) (Z[(_r)*4 + (_c)])
 
