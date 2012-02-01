@@ -11,7 +11,7 @@
 from numpy.distutils.core import setup, Extension
 
 setup(name='fastcluster', \
-      version='1.1.3', \
+      version='1.1.4', \
       py_modules=['fastcluster'], \
       description='Fast hierarchical clustering routines for R and Python.', \
       long_description="""
@@ -33,7 +33,7 @@ The interface is very similar to MATLAB's Statistics Toolbox API to make code ea
                   # more warning switches on. No warning should appear in
                   # the compilation process.
                   #
-                  # extra_compile_args=['-O3', '-Wall', '-ansi', '-Wconversion', '-Wsign-conversion'],
+                  #extra_compile_args=['-O3', '-Wall', '-ansi', '-Wconversion', '-Wsign-conversion'],
                   # (no -pedantic -Wextra)
      )],
       keywords=['dendrogram', 'linkage', 'cluster', 'agglomerative', 'hierarchical', 'hierarchy', 'ward'],

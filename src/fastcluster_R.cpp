@@ -23,6 +23,18 @@ struct node_pos {
 };
 
 void order_nodes(const int N, const int * const merge, const t_index * const node_size, int * const order) {
+  /* Parameters:
+     N         : number of data points
+     merge     : (N-1)×2 array which specifies the node indices which are merged
+                 in each step of the clustering procedure.
+                 Negative entries -1...-N point to singleton nodes, while
+                 positive entries 1...(N-1) point to nodes which are themselves
+                 parents of other nodes.
+     node_size : array of node sizes - makes it easier
+     order     : output array of size N
+
+     Runtime: Θ(N)
+  */
   auto_array_ptr<node_pos> queue(N/2);
 
   int parent;
@@ -34,18 +46,19 @@ void order_nodes(const int N, const int * const merge, const t_index * const nod
   t_index idx = 1;
 
   do {
-    idx --;
+    idx--;
     parent = queue[idx].node;
     pos = queue[idx].pos;
 
     // First child
     child = merge[parent];
-    if (child<0) { // singleton node, write this into the 'order' array
+    if (child<0) { // singleton node, write this into the 'order' array.
       order[pos] = -child;
       pos++;
     }
-    else {
-      queue[idx].node = child-1;
+    else { /* compound node: put it on top of the queue and decompose it
+              in a later iteration. */
+      queue[idx].node = child-1; // convert index-1 based to index-0 based
       queue[idx].pos = pos;
       idx++;
       pos += node_size[child-1];
@@ -70,7 +83,6 @@ void generate_R_dendrogram(int * const merge, double * const height, int * const
   // The array "nodes" is a union-find data structure for the cluster
   // identites (only needed for unsorted cluster_result input).
   union_find nodes;
-
   if (!sorted) {
     std::stable_sort(Z2[0], Z2[N-1]);
     nodes.init(N);
@@ -99,6 +111,12 @@ void generate_R_dendrogram(int * const merge, double * const height, int * const
       node1 = node2;
       node2 = tmp;
     }
+    /* Conversion between labeling conventions.
+       Input:  singleton nodes 0,...,N-1
+               compound nodes  N,...,2N-2
+       Output: singleton nodes -1,...,-N
+               compound nodes  1,...,N
+    */
     merge[i]     = (node1<N) ? -static_cast<int>(node1)-1
                               : static_cast<int>(node1)-N+1;
     merge[i+N-1] = (node2<N) ? -static_cast<int>(node2)-1
@@ -127,7 +145,7 @@ class R_dissimilarity {
 private:
   t_float * Xa;
   std::ptrdiff_t dim; // std::ptrdiff_t saves many statis_cast<> in products
-  int * members;
+  t_float * members;
   void (cluster_result::*postprocessfn) (const t_float) const;
   t_float postprocessarg;
 
@@ -141,7 +159,7 @@ public:
   R_dissimilarity (t_float * const X,
                    const int N,
                    const int dim,
-                   int * const members,
+                   t_float * const members,
                    const unsigned char method,
                    const unsigned char metric,
                    const t_float p,
@@ -212,27 +230,30 @@ public:
     return Xa+i*dim+j;
   }
 
-  void merge2(const t_index i, const t_index j) const {
+  void merge(const t_index i, const t_index j, const t_index newnode) const {
+    merge_inplace(row_repr[i], row_repr[j]);
+    row_repr[newnode] = row_repr[j];
+  }
+
+  void merge_inplace(const t_index i, const t_index j) const {
     for(t_index k=0; k<dim; k++) {
-      *(Xptr(j,k)) = (X(i,k)*static_cast<t_float>(members[i]) +
-                      X(j,k)*static_cast<t_float>(members[j])) /
-        static_cast<t_float>(members[i]+members[j]);
+      *(Xptr(j,k)) = (X(i,k)*members[i] + X(j,k)*members[j]) /
+        (members[i]+members[j]);
     }
     members[j] += members[i];
   }
 
-  void merge(const t_index i, const t_index j, const t_index newnode) const {
-    merge2(row_repr[i], row_repr[j]);
-    row_repr[newnode] = row_repr[j];
+  void merge_weighted(const t_index i, const t_index j, const t_index newnode) const {
+    merge_inplace_weighted(row_repr[i], row_repr[j]);
+    row_repr[newnode] =row_repr[j];
   }
 
-  void merge_weighted(const t_index i, const t_index j, const t_index newnode) const {
-    t_float * const Pi = Xa+row_repr[i]*dim;
-    t_float * const Pj = Xa+row_repr[j]*dim;
+  void merge_inplace_weighted(const t_index i, const t_index j) const {
+    t_float * const Pi = Xa+i*dim;
+    t_float * const Pj = Xa+j*dim;
     for(t_index k=0; k<dim; k++) {
-      Pj[k] = (Pi[k]+Pj[k])/2.;
+      Pj[k] = (Pi[k]+Pj[k])*.5;
     }
-    row_repr[newnode] =row_repr[j];
   }
 
   void postprocess(cluster_result & Z2) const {
@@ -242,9 +263,18 @@ public:
   }
 
   double ward(t_index const i1, t_index const i2) const {
-    t_float const mi = static_cast<t_float>(members[i1]);
-    t_float const mj = static_cast<t_float>(members[i2]);
-    return sqeuclidean(i1,i2)*mi*mj/(mi+mj);
+    return sqeuclidean(i1,i2)*members[i1]*members[i2]/(members[i1]+members[i2]);
+  }
+
+  inline double ward_initial(t_index const i1, t_index const i2) const {
+    /* In the R interface, ward_initial is the same as ward. Only the Python
+       interface has two different functions here. */
+    return ward(i1,i2);
+  }
+
+  inline static t_float ward_initial_conversion(const t_float min) {
+    // identity
+    return min;
   }
 
   double ward_extended(t_index i1, t_index i2) const {
@@ -252,7 +282,7 @@ public:
   }
 
   /*
-    The following definitions and methods are taken directly from
+    The following definitions and methods have been taken directly from
     the R source file
 
       /src/library/stats/src/distance.c
@@ -480,7 +510,7 @@ extern "C" {
       UNPROTECT(1); // method_
 
       // Parameter members: number of members in each node
-      auto_array_ptr<int> members;
+      auto_array_ptr<t_float> members;
       if (method==METHOD_METR_AVERAGE ||
           method==METHOD_METR_WARD ||
           method==METHOD_METR_CENTROID) {
@@ -489,10 +519,10 @@ extern "C" {
           for (t_index i=0; i<N; i++) members[i] = 1;
         }
         else {
-          PROTECT(members_ = AS_INTEGER(members_));
+          PROTECT(members_ = AS_NUMERIC(members_));
           if (LENGTH(members_)!=N)
             Rf_error("'members' must have length N.");
-          const int * const m = INTEGER_POINTER(members_);
+          const t_float * const m = NUMERIC_POINTER(members_);
           for (t_index i=0; i<N; i++) members[i] = m[i];
           UNPROTECT(1); // members
         }
@@ -522,22 +552,22 @@ extern "C" {
         MST_linkage_core(N, D, Z2);
         break;
       case METHOD_METR_COMPLETE:
-        NN_chain_core<METHOD_METR_COMPLETE, int>(N, D__, NULL, Z2);
+        NN_chain_core<METHOD_METR_COMPLETE, t_float>(N, D__, NULL, Z2);
         break;
       case METHOD_METR_AVERAGE:
-        NN_chain_core<METHOD_METR_AVERAGE, int>(N, D__, members, Z2);
+        NN_chain_core<METHOD_METR_AVERAGE, t_float>(N, D__, members, Z2);
         break;
       case METHOD_METR_WEIGHTED:
-        NN_chain_core<METHOD_METR_WEIGHTED, int>(N, D__, NULL, Z2);
+        NN_chain_core<METHOD_METR_WEIGHTED, t_float>(N, D__, NULL, Z2);
         break;
       case METHOD_METR_WARD:
-        NN_chain_core<METHOD_METR_WARD, int>(N, D__, members, Z2);
+        NN_chain_core<METHOD_METR_WARD, t_float>(N, D__, members, Z2);
         break;
       case METHOD_METR_CENTROID:
-        generic_linkage<METHOD_METR_CENTROID, int>(N, D__, members, Z2);
+        generic_linkage<METHOD_METR_CENTROID, t_float>(N, D__, members, Z2);
         break;
       case METHOD_METR_MEDIAN:
-        generic_linkage<METHOD_METR_MEDIAN, int>(N, D__, NULL, Z2);
+        generic_linkage<METHOD_METR_MEDIAN, t_float>(N, D__, NULL, Z2);
         break;
       }
 
@@ -653,7 +683,7 @@ extern "C" {
       UNPROTECT(2); // dims_, X_
 
       // Parameter members: number of members in each node
-      auto_array_ptr<int> members;
+      auto_array_ptr<t_float> members;
       if (method==METHOD_VECTOR_WARD ||
           method==METHOD_VECTOR_CENTROID) {
         members.init(N);
@@ -661,10 +691,10 @@ extern "C" {
           for (t_index i=0; i<N; i++) members[i] = 1;
         }
         else {
-          PROTECT(members_ = AS_INTEGER(members_));
+          PROTECT(members_ = AS_NUMERIC(members_));
           if (LENGTH(members_)!=N)
             Rf_error("The length of 'members' must be the same as the number of data points.");
-          const int * const m = INTEGER_POINTER(members_);
+          const t_float * const m = NUMERIC_POINTER(members_);
           for (t_index i=0; i<N; i++) members[i] = m[i];
           UNPROTECT(1); // members
         }
@@ -685,10 +715,15 @@ extern "C" {
       }
       UNPROTECT(1); // p_
 
-      // The generic_linkage_vector algorithm uses labels N,N+1,... for the
-      // new nodes, so we need a table which node is stored in which row.
+      /* The generic_linkage_vector_alternative algorithm uses labels
+         N,N+1,... for the new nodes, so we need a table which node is
+         stored in which row.
+
+         Instructions: Set this variable to true for all methods which
+         use the generic_linkage_vector_alternative algorithm below.
+      */
       bool make_row_repr =
-        (method!=METHOD_VECTOR_SINGLE);
+        (method==METHOD_VECTOR_CENTROID || method==METHOD_VECTOR_MEDIAN);
 
       R_dissimilarity dist(X, N, dim, members,
                            static_cast<unsigned char>(method),
@@ -710,11 +745,11 @@ extern "C" {
         break;
 
       case METHOD_VECTOR_CENTROID:
-        generic_linkage_vector<METHOD_METR_CENTROID>(N, dist, Z2);
+        generic_linkage_vector_alternative<METHOD_METR_CENTROID>(N, dist, Z2);
         break;
 
       case METHOD_VECTOR_MEDIAN:
-        generic_linkage_vector<METHOD_METR_MEDIAN>(N, dist, Z2);
+        generic_linkage_vector_alternative<METHOD_METR_MEDIAN>(N, dist, Z2);
         break;
       }
 

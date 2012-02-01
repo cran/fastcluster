@@ -3,6 +3,33 @@
 
   Copyright © 2011 Daniel Müllner
   <http://math.stanford.edu/~muellner>
+
+  This library implements various fast algorithms for hierarchical, agglomerative
+` clustering methods:
+
+  (1) Algorithms for the "stored matrix approach": the input is the array of
+      pairwise dissimilarities.
+
+      MST_linkage_core: single linkage clustering with the "minimum spanning tree
+      algorithm (Rohlfs)
+
+      NN_chain_core: nearest-neighbor-chain algorithm, suitable for single,
+      complete, average, weighted and Ward linkage (Murtagh)
+
+      generic_linkage: generic algorithm, suitable for all distance update formulas
+      (Müllner)
+
+  (2) Algorithms for the "stored data approach": the input are points in a vector
+      space.
+
+      MST_linkage_core_vector: single linkage clustering for vector data
+
+      generic_linkage_vector: generic algorithm for vector data, suitable for
+      the Ward, centroid and median methods.
+
+      generic_linkage_vector_alternative: alternative scheme for updating the
+      nearest neighbors. This method seems faster than "generic_linkage_vector"
+      for the centroid and median methods but slower for the Ward method.
 */
 
 //#define __STDC_LIMIT_MACROS
@@ -101,7 +128,7 @@ public:
     init(size);
     for (index i=0; i<size; i++) ptr[i] = val;
   }
-  operator type *() const { return ptr; }
+  inline operator type *() const { return ptr; }
 };
 
 struct node {
@@ -141,9 +168,8 @@ public:
 
   node * operator[] (const t_index idx) const { return Z + idx; }
 
-  void sqrt(const t_float) const {
-    sqrt();
-  }
+  /* Define several methods to postprocess the distances. All these functions
+     are monotone, so they do not change the sorted order of distances. */
 
   void sqrt() const {
     for (t_index i=0; i<pos; i++) {
@@ -151,7 +177,11 @@ public:
     }
   }
 
-  void sqrtdouble(const t_float) const {
+  void sqrt(const t_float) const { // ignore the argument
+    sqrt();
+  }
+
+  void sqrtdouble(const t_float) const { // ignore the argument
     for (t_index i=0; i<pos; i++) {
       Z[i].dist = ::sqrt(2*Z[i].dist);
     }
@@ -170,7 +200,7 @@ public:
     }
   }
 
-  void plusone(const t_float) const {
+  void plusone(const t_float) const { // ignore the argument
     for (t_index i=0; i<pos; i++) {
       Z[i].dist += 1;
     }
@@ -302,7 +332,7 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
 */
   t_index i;
   t_index idx2;
-  doubly_linked_list AR(N);
+  doubly_linked_list active_nodes(N);
   auto_array_ptr<t_float> d(N);
 
   t_index prev_node;
@@ -326,15 +356,15 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
 
   for (t_index j=1; j<N-1; j++) {
     prev_node = idx2;
-    AR.remove(prev_node);
+    active_nodes.remove(prev_node);
 
-    idx2 = AR.succ[0];
+    idx2 = active_nodes.succ[0];
     min = d[idx2];
-    for (i=idx2; min!=min && i<prev_node; i=AR.succ[i]) {
+    for (i=idx2; min!=min && i<prev_node; i=active_nodes.succ[i]) {
       min = d[i] = D_(i, prev_node);
       idx2 = i;
     }
-    for ( ; i<prev_node; i=AR.succ[i]) {
+    for ( ; i<prev_node; i=active_nodes.succ[i]) {
       if (d[i] > D_(i, prev_node))
         d[i] = D_(i, prev_node);
       if (d[i] < min) {
@@ -342,11 +372,11 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
         idx2 = i;
       }
     }
-    for (; min!=min && i<N; i=AR.succ[i]) {
+    for (; min!=min && i<N; i=active_nodes.succ[i]) {
       min = d[i] = D_(prev_node, i);
       idx2 = i;
     }
-    for (; i<N; i=AR.succ[i]) {
+    for (; i<N; i=active_nodes.succ[i]) {
       if (d[i] > D_(prev_node, i))
         d[i] = D_(prev_node, i);
       if (d[i] < min) {
@@ -358,6 +388,7 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
   }
 }
 
+/* Functions for the update of the dissimilarity array */
 
 inline static void f_single( t_float * const b, const t_float a ) {
   if (*b > a) *b = a;
@@ -382,7 +413,6 @@ inline static void f_median( t_float * const b, const t_float a, const t_float c
   *b = (a+(*b))/2 - c_4;
 }
 
-
 template <const unsigned char method, typename t_members>
 static void NN_chain_core(const t_index N, t_float * const D, t_members * const members, cluster_result & Z2) {
 /*
@@ -406,18 +436,18 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
   t_index idx1, idx2;
 
   t_float size1, size2;
-  doubly_linked_list AR(N);
+  doubly_linked_list active_nodes(N);
 
   t_float min;
 
   for (t_index j=0; j<N-1; j++) {
     if (NN_chain_tip <= 3) {
-      NN_chain[0] = idx1 = AR.start;
+      NN_chain[0] = idx1 = active_nodes.start;
       NN_chain_tip = 1;
 
-      idx2 = AR.succ[idx1];
+      idx2 = active_nodes.succ[idx1];
       min = D_(idx1,idx2);
-      for (i=AR.succ[idx2]; i<N; i=AR.succ[i]) {
+      for (i=active_nodes.succ[idx2]; i<N; i=active_nodes.succ[i]) {
         if (D_(idx1,i) < min) {
           min = D_(idx1,i);
           idx2 = i;
@@ -434,13 +464,13 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
     do {
       NN_chain[NN_chain_tip] = idx2;
 
-      for (i=AR.start; i<idx2; i=AR.succ[i]) {
+      for (i=active_nodes.start; i<idx2; i=active_nodes.succ[i]) {
         if (D_(i,idx2) < min) {
           min = D_(i,idx2);
           idx1 = i;
         }
       }
-      for (i=AR.succ[idx2]; i<N; i=AR.succ[i]) {
+      for (i=active_nodes.succ[idx2]; i<N; i=active_nodes.succ[i]) {
         if (D_(idx2,i) < min) {
           min = D_(idx2,i);
           idx1 = i;
@@ -467,8 +497,8 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
       members[idx2] += members[idx1];
     }
 
-    // Remove the smaller index from the valid indices (AR).
-    AR.remove(idx1);
+    // Remove the smaller index from the valid indices (active_nodes).
+    active_nodes.remove(idx1);
 
     switch (method) {
     case METHOD_METR_SINGLE:
@@ -478,13 +508,13 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
       Characteristic: new distances are never longer than the old distances.
       */
       // Update the distance matrix in the range [start, idx1).
-      for (i=AR.start; i<idx1; i=AR.succ[i])
+      for (i=active_nodes.start; i<idx1; i=active_nodes.succ[i])
         f_single(&D_(i, idx2), D_(i, idx1) );
       // Update the distance matrix in the range (idx1, idx2).
-      for (; i<idx2; i=AR.succ[i])
+      for (; i<idx2; i=active_nodes.succ[i])
         f_single(&D_(i, idx2), D_(idx1, i) );
       // Update the distance matrix in the range (idx2, N).
-      for (i=AR.succ[idx2]; i<N; i=AR.succ[i])
+      for (i=active_nodes.succ[idx2]; i<N; i=active_nodes.succ[i])
         f_single(&D_(idx2, i), D_(idx1, i) );
       break;
 
@@ -495,13 +525,13 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
       Characteristic: new distances are never shorter than the old distances.
       */
       // Update the distance matrix in the range [start, idx1).
-      for (i=AR.start; i<idx1; i=AR.succ[i])
+      for (i=active_nodes.start; i<idx1; i=active_nodes.succ[i])
         f_complete(&D_(i, idx2), D_(i, idx1) );
       // Update the distance matrix in the range (idx1, idx2).
-      for (; i<idx2; i=AR.succ[i])
+      for (; i<idx2; i=active_nodes.succ[i])
         f_complete(&D_(i, idx2), D_(idx1, i) );
       // Update the distance matrix in the range (idx2, N).
-      for (i=AR.succ[idx2]; i<N; i=AR.succ[i])
+      for (i=active_nodes.succ[idx2]; i<N; i=active_nodes.succ[i])
         f_complete(&D_(idx2, i), D_(idx1, i) );
       break;
 
@@ -514,13 +544,13 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
       // Update the distance matrix in the range [start, idx1).
       t_float s = size1/(size1+size2);
       t_float t = size2/(size1+size2);
-      for (i=AR.start; i<idx1; i=AR.succ[i])
+      for (i=active_nodes.start; i<idx1; i=active_nodes.succ[i])
         f_average(&D_(i, idx2), D_(i, idx1), s, t );
       // Update the distance matrix in the range (idx1, idx2).
-      for (; i<idx2; i=AR.succ[i])
+      for (; i<idx2; i=active_nodes.succ[i])
         f_average(&D_(i, idx2), D_(idx1, i), s, t );
       // Update the distance matrix in the range (idx2, N).
-      for (i=AR.succ[idx2]; i<N; i=AR.succ[i])
+      for (i=active_nodes.succ[idx2]; i<N; i=active_nodes.succ[i])
         f_average(&D_(idx2, i), D_(idx1, i), s, t );
       break;
     }
@@ -532,13 +562,13 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
       Shorter and longer distances can occur.
       */
       // Update the distance matrix in the range [start, idx1).
-      for (i=AR.start; i<idx1; i=AR.succ[i])
+      for (i=active_nodes.start; i<idx1; i=active_nodes.succ[i])
         f_weighted(&D_(i, idx2), D_(i, idx1) );
       // Update the distance matrix in the range (idx1, idx2).
-      for (; i<idx2; i=AR.succ[i])
+      for (; i<idx2; i=active_nodes.succ[i])
         f_weighted(&D_(i, idx2), D_(idx1, i) );
       // Update the distance matrix in the range (idx2, N).
-      for (i=AR.succ[idx2]; i<N; i=AR.succ[i])
+      for (i=active_nodes.succ[idx2]; i<N; i=active_nodes.succ[i])
         f_weighted(&D_(idx2, i), D_(idx1, i) );
       break;
 
@@ -551,15 +581,15 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
       */
       // Update the distance matrix in the range [start, idx1).
       //t_float v = static_cast<t_float>(members[i]);
-      for (i=AR.start; i<idx1; i=AR.succ[i])
+      for (i=active_nodes.start; i<idx1; i=active_nodes.succ[i])
         f_ward(&D_(i, idx2), D_(i, idx1), min,
                size1, size2, static_cast<t_float>(members[i]) );
       // Update the distance matrix in the range (idx1, idx2).
-      for (; i<idx2; i=AR.succ[i])
+      for (; i<idx2; i=active_nodes.succ[i])
         f_ward(&D_(i, idx2), D_(idx1, i), min,
                size1, size2, static_cast<t_float>(members[i]) );
       // Update the distance matrix in the range (idx2, N).
-      for (i=AR.succ[idx2]; i<N; i=AR.succ[i])
+      for (i=active_nodes.succ[idx2]; i<N; i=active_nodes.succ[i])
         f_ward(&D_(idx2, i), D_(idx1, i), min,
                size1, size2, static_cast<t_float>(members[i]) );
       break;
@@ -632,7 +662,7 @@ public:
     }
   }
 
-  inline operator t_index() const {
+  inline t_index argmin() const {
     // Return the minimal element.
     return I[0];
   }
@@ -740,9 +770,11 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
 
   auto_array_ptr<t_index> n_nghbr(N_1); // array of nearest neighbors
   auto_array_ptr<t_float> mindist(N_1); // distances to the nearest neighbors
-  auto_array_ptr<t_index> row_repr(N);// row_repr[i]: node number that the i-th row represents
-  doubly_linked_list AR(N); // active rows
-  binary_min_heap minidx(N_1); // minimum heap structure for the nearest neighbors
+  auto_array_ptr<t_index> row_repr(N); // row_repr[i]: node number that the i-th row
+                                       // represents
+  doubly_linked_list active_nodes(N);
+  binary_min_heap nn_distances(N_1); // minimum heap structure for the distance
+                                     // to the nearest neighbor of each point
 
   t_index node1, node2;     // node numbers in the output
   t_float size1, size2;     // and their cardinalities
@@ -775,7 +807,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
   }
   // Put the minimal distances into a heap structure to make the repeated global
   // minimum searches fast.
-  minidx.heapify(mindist);
+  nn_distances.heapify(mindist);
 
   // Main loop: We have N-1 merging steps.
   for (i=0; i<N_1; i++) {
@@ -811,24 +843,26 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       cubic in N. We avoid this whenever possible, and in most cases the runtime
       appears to be quadratic.
     */
-    idx1 = minidx;
+    idx1 = nn_distances.argmin();
     if (method != METHOD_METR_SINGLE) {
       while ( D_(idx1, n_nghbr[idx1]) > mindist[idx1] ) {
         // Recompute the minimum mindist[idx1] and n_nghbr[idx1].
-        n_nghbr[idx1] = j = AR.succ[idx1]; // exists, maximally N-1
+        n_nghbr[idx1] = j = active_nodes.succ[idx1]; // exists, maximally N-1
         min = D_(idx1,j);
-        for (j=AR.succ[j]; j<N; j=AR.succ[j]) {
+        for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           if (D_(idx1,j)<min) {
             min = D_(idx1,j);
             n_nghbr[idx1] = j;
           }
         }
-        minidx.update_geq(idx1, min); // Update the heap with the new true minimum.
-        idx1 = minidx; // And search for the (possibly different) minimal entry.
+        /* Update the heap with the new true minimum and search for the (possibly
+           different) minimal entry. */
+        nn_distances.update_geq(idx1, min);
+        idx1 = nn_distances.argmin();
       }
     }
 
-    minidx.heap_pop(); // Remove the current minimum from the heap.
+    nn_distances.heap_pop(); // Remove the current minimum from the heap.
     idx2 = n_nghbr[idx1];
 
     // Write the newly found minimal pair of nodes to the output array.
@@ -844,8 +878,8 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
     }
     Z2.append(node1, node2, mindist[idx1]);
 
-    // Remove idx1 from the list of active indices (AR).
-    AR.remove(idx1);
+    // Remove idx1 from the list of active indices (active_nodes).
+    active_nodes.remove(idx1);
     // Index idx2 now represents the new (merged) node with label N+i.
     row_repr[idx2] = N+i;
 
@@ -858,18 +892,18 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
         Characteristic: new distances are never longer than the old distances.
       */
       // Update the distance matrix in the range [start, idx1).
-      for (j=AR.start; j<idx1; j=AR.succ[j]) {
+      for (j=active_nodes.start; j<idx1; j=active_nodes.succ[j]) {
         f_single(&D_(j, idx2), D_(j, idx1));
         if (n_nghbr[j] == idx1)
           n_nghbr[j] = idx2;
       }
       // Update the distance matrix in the range (idx1, idx2).
-      for (; j<idx2; j=AR.succ[j]) {
+      for (; j<idx2; j=active_nodes.succ[j]) {
         f_single(&D_(j, idx2), D_(idx1, j));
         // If the new value is below the old minimum in a row, update
         // the mindist and n_nghbr arrays.
         if (D_(j, idx2)<mindist[j]) {
-          minidx.update_leq(j, D_(j, idx2));
+          nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
       }
@@ -877,14 +911,14 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       // Recompute the minimum mindist[idx2] and n_nghbr[idx2].
       if (idx2<N_1) {
         min = mindist[idx2];
-        for (j=AR.succ[idx2]; j<N; j=AR.succ[j]) {
+        for (j=active_nodes.succ[idx2]; j<N; j=active_nodes.succ[j]) {
           f_single(&D_(idx2, j), D_(idx1, j) );
           if (D_(idx2, j) < min) {
             n_nghbr[idx2] = j;
             min = D_(idx2, j);
           }
         }
-        minidx.update_leq(idx2, min);
+        nn_distances.update_leq(idx2, min);
       }
       break;
 
@@ -895,16 +929,16 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
         Characteristic: new distances are never shorter than the old distances.
       */
       // Update the distance matrix in the range [start, idx1).
-      for (j=AR.start; j<idx1; j=AR.succ[j]) {
+      for (j=active_nodes.start; j<idx1; j=active_nodes.succ[j]) {
         f_complete(&D_(j, idx2), D_(j, idx1) );
         if (n_nghbr[j] == idx1)
           n_nghbr[j] = idx2;
       }
       // Update the distance matrix in the range (idx1, idx2).
-      for (; j<idx2; j=AR.succ[j])
+      for (; j<idx2; j=active_nodes.succ[j])
         f_complete(&D_(j, idx2), D_(idx1, j) );
       // Update the distance matrix in the range (idx2, N).
-      for (j=AR.succ[idx2]; j<N; j=AR.succ[j])
+      for (j=active_nodes.succ[idx2]; j<N; j=active_nodes.succ[j])
         f_complete(&D_(idx2, j), D_(idx1, j) );
       break;
 
@@ -917,32 +951,32 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       // Update the distance matrix in the range [start, idx1).
       t_float s = size1/(size1+size2);
       t_float t = size2/(size1+size2);
-      for (j=AR.start; j<idx1; j=AR.succ[j]) {
+      for (j=active_nodes.start; j<idx1; j=active_nodes.succ[j]) {
         f_average(&D_(j, idx2), D_(j, idx1), s, t);
         if (n_nghbr[j] == idx1)
           n_nghbr[j] = idx2;
       }
       // Update the distance matrix in the range (idx1, idx2).
-      for (; j<idx2; j=AR.succ[j]) {
+      for (; j<idx2; j=active_nodes.succ[j]) {
         f_average(&D_(j, idx2), D_(idx1, j), s, t);
         if (D_(j, idx2)<mindist[j]) {
-          minidx.update_leq(j, D_(j, idx2));
+          nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
       }
       // Update the distance matrix in the range (idx2, N).
       if (idx2<N_1) {
-        n_nghbr[idx2] = j = AR.succ[idx2]; // exists, maximally N-1
+        n_nghbr[idx2] = j = active_nodes.succ[idx2]; // exists, maximally N-1
         f_average(&D_(idx2, j), D_(idx1, j), s, t);
         min = D_(idx2,j);
-        for (j=AR.succ[j]; j<N; j=AR.succ[j]) {
+        for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           f_average(&D_(idx2, j), D_(idx1, j), s, t);
           if (D_(idx2,j)<min) {
             min = D_(idx2,j);
             n_nghbr[idx2] = j;
           }
         }
-        minidx.update(idx2, min);
+        nn_distances.update(idx2, min);
       }
       break;
     }
@@ -954,32 +988,32 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
         Shorter and longer distances can occur.
       */
       // Update the distance matrix in the range [start, idx1).
-      for (j=AR.start; j<idx1; j=AR.succ[j]) {
+      for (j=active_nodes.start; j<idx1; j=active_nodes.succ[j]) {
         f_weighted(&D_(j, idx2), D_(j, idx1) );
         if (n_nghbr[j] == idx1)
           n_nghbr[j] = idx2;
       }
       // Update the distance matrix in the range (idx1, idx2).
-      for (; j<idx2; j=AR.succ[j]) {
+      for (; j<idx2; j=active_nodes.succ[j]) {
         f_weighted(&D_(j, idx2), D_(idx1, j) );
         if (D_(j, idx2)<mindist[j]) {
-          minidx.update_leq(j, D_(j, idx2));
+          nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
       }
       // Update the distance matrix in the range (idx2, N).
       if (idx2<N_1) {
-        n_nghbr[idx2] = j = AR.succ[idx2]; // exists, maximally N-1
+        n_nghbr[idx2] = j = active_nodes.succ[idx2]; // exists, maximally N-1
         f_weighted(&D_(idx2, j), D_(idx1, j) );
         min = D_(idx2,j);
-        for (j=AR.succ[j]; j<N; j=AR.succ[j]) {
+        for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           f_weighted(&D_(idx2, j), D_(idx1, j) );
           if (D_(idx2,j)<min) {
             min = D_(idx2,j);
             n_nghbr[idx2] = j;
           }
         }
-        minidx.update(idx2, min);
+        nn_distances.update(idx2, min);
       }
       break;
 
@@ -991,28 +1025,28 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
         but maybe bigger than max(d1,d2).
       */
       // Update the distance matrix in the range [start, idx1).
-      for (j=AR.start; j<idx1; j=AR.succ[j]) {
+      for (j=active_nodes.start; j<idx1; j=active_nodes.succ[j]) {
         f_ward(&D_(j, idx2), D_(j, idx1), mindist[idx1],
                size1, size2, static_cast<t_float>(members[j]) );
         if (n_nghbr[j] == idx1)
           n_nghbr[j] = idx2;
       }
       // Update the distance matrix in the range (idx1, idx2).
-      for (; j<idx2; j=AR.succ[j]) {
+      for (; j<idx2; j=active_nodes.succ[j]) {
         f_ward(&D_(j, idx2), D_(idx1, j), mindist[idx1], size1, size2,
                static_cast<t_float>(members[j]) );
         if (D_(j, idx2)<mindist[j]) {
-          minidx.update_leq(j, D_(j, idx2));
+          nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
       }
       // Update the distance matrix in the range (idx2, N).
       if (idx2<N_1) {
-        n_nghbr[idx2] = j = AR.succ[idx2]; // exists, maximally N-1
+        n_nghbr[idx2] = j = active_nodes.succ[idx2]; // exists, maximally N-1
         f_ward(&D_(idx2, j), D_(idx1, j), mindist[idx1],
                size1, size2, static_cast<t_float>(members[j]) );
         min = D_(idx2,j);
-        for (j=AR.succ[j]; j<N; j=AR.succ[j]) {
+        for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           f_ward(&D_(idx2, j), D_(idx1, j), mindist[idx1],
                  size1, size2, static_cast<t_float>(members[j]) );
           if (D_(idx2,j)<min) {
@@ -1020,7 +1054,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
             n_nghbr[idx2] = j;
           }
         }
-        minidx.update(idx2, min);
+        nn_distances.update(idx2, min);
       }
       break;
 
@@ -1035,36 +1069,36 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       t_float s = size1/(size1+size2);
       t_float t = size2/(size1+size2);
       t_float stc = s*t*mindist[idx1];
-      for (j=AR.start; j<idx1; j=AR.succ[j]) {
+      for (j=active_nodes.start; j<idx1; j=active_nodes.succ[j]) {
         f_centroid(&D_(j, idx2), D_(j, idx1), stc, s, t);
         if (D_(j, idx2)<mindist[j]) {
-          minidx.update_leq(j, D_(j, idx2));
+          nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
         else if (n_nghbr[j] == idx1)
           n_nghbr[j] = idx2;
       }
       // Update the distance matrix in the range (idx1, idx2).
-      for (; j<idx2; j=AR.succ[j]) {
+      for (; j<idx2; j=active_nodes.succ[j]) {
         f_centroid(&D_(j, idx2), D_(idx1, j), stc, s, t);
         if (D_(j, idx2)<mindist[j]) {
-          minidx.update_leq(j, D_(j, idx2));
+          nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
       }
       // Update the distance matrix in the range (idx2, N).
       if (idx2<N_1) {
-        n_nghbr[idx2] = j = AR.succ[idx2]; // exists, maximally N-1
+        n_nghbr[idx2] = j = active_nodes.succ[idx2]; // exists, maximally N-1
         f_centroid(&D_(idx2, j), D_(idx1, j), stc, s, t);
         min = D_(idx2,j);
-        for (j=AR.succ[j]; j<N; j=AR.succ[j]) {
+        for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           f_centroid(&D_(idx2, j), D_(idx1, j), stc, s, t);
           if (D_(idx2,j)<min) {
             min = D_(idx2,j);
             n_nghbr[idx2] = j;
           }
         }
-        minidx.update(idx2, min);
+        nn_distances.update(idx2, min);
       }
       break;
     }
@@ -1078,36 +1112,36 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       */
       // Update the distance matrix in the range [start, idx1).
       t_float c_4 = mindist[idx1]/4;
-      for (j=AR.start; j<idx1; j=AR.succ[j]) {
+      for (j=active_nodes.start; j<idx1; j=active_nodes.succ[j]) {
         f_median(&D_(j, idx2), D_(j, idx1), c_4 );
         if (D_(j, idx2)<mindist[j]) {
-          minidx.update_leq(j, D_(j, idx2));
+          nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
         else if (n_nghbr[j] == idx1)
           n_nghbr[j] = idx2;
       }
       // Update the distance matrix in the range (idx1, idx2).
-      for (; j<idx2; j=AR.succ[j]) {
+      for (; j<idx2; j=active_nodes.succ[j]) {
         f_median(&D_(j, idx2), D_(idx1, j), c_4 );
         if (D_(j, idx2)<mindist[j]) {
-          minidx.update_leq(j, D_(j, idx2));
+          nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
       }
       // Update the distance matrix in the range (idx2, N).
       if (idx2<N_1) {
-        n_nghbr[idx2] = j = AR.succ[idx2]; // exists, maximally N-1
+        n_nghbr[idx2] = j = active_nodes.succ[idx2]; // exists, maximally N-1
         f_median(&D_(idx2, j), D_(idx1, j), c_4 );
         min = D_(idx2,j);
-        for (j=AR.succ[j]; j<N; j=AR.succ[j]) {
+        for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           f_median(&D_(idx2, j), D_(idx1, j), c_4 );
           if (D_(idx2,j)<min) {
             min = D_(idx2,j);
             n_nghbr[idx2] = j;
           }
         }
-        minidx.update(idx2, min);
+        nn_distances.update(idx2, min);
       }
       break;
     }
@@ -1117,6 +1151,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
 /*
   Clustering methods for vector data
 */
+
 template <typename t_dissimilarity>
 static void MST_linkage_core_vector(const t_index N,
                                     t_dissimilarity & dist,
@@ -1140,7 +1175,7 @@ static void MST_linkage_core_vector(const t_index N,
 */
   t_index i;
   t_index idx2;
-  doubly_linked_list AR(N);
+  doubly_linked_list active_nodes(N);
   auto_array_ptr<t_float> d(N);
 
   t_index prev_node;
@@ -1166,17 +1201,17 @@ static void MST_linkage_core_vector(const t_index N,
 
   for (t_index j=1; j<N-1; j++) {
     prev_node = idx2;
-    AR.remove(prev_node);
+    active_nodes.remove(prev_node);
 
-    idx2 = AR.succ[0];
+    idx2 = active_nodes.succ[0];
     min = d[idx2];
 
-    for (i=idx2; min!=min && i<N; i=AR.succ[i]) { // eliminate NaNs if possible
+    for (i=idx2; min!=min && i<N; i=active_nodes.succ[i]) { // eliminate NaNs if possible
       min = d[i] = dist(i, prev_node);
       idx2 = i;
     }
 
-    for ( ; i<N; i=AR.succ[i]) {
+    for ( ; i<N; i=active_nodes.succ[i]) {
       t_float tmp = dist(i, prev_node);
       if (d[i] > tmp)
         d[i] = tmp;
@@ -1205,14 +1240,232 @@ static void generic_linkage_vector(const t_index N,
     are returned by the distance function.
   */
   const t_index N_1 = N-1;
+  t_index i, j; // loop variables
+  t_index idx1, idx2; // row and column indices
+
+  auto_array_ptr<t_index> n_nghbr(N_1); // array of nearest neighbors
+  auto_array_ptr<t_float> mindist(N_1); // distances to the nearest neighbors
+  auto_array_ptr<t_index> row_repr(N); // row_repr[i]: node number that the i-th
+                                       // row represents
+  doubly_linked_list active_nodes(N);
+  binary_min_heap nn_distances(N_1); // minimum heap structure for the distance
+                                     // to the nearest neighbor of each point
+
+  t_index node1, node2;     // node numbers in the output
+  t_float min; // minimum and row index for nearest-neighbor search
+
+  for (i=0; i<N; i++)
+    // Build a list of row ↔ node label assignments.
+    // Initially i ↦ i
+    row_repr[i] = i;
+
+  // Initialize the minimal distances:
+  // Find the nearest neighbor of each point.
+  // n_nghbr[i] = argmin_{j>i} D(i,j) for i in range(N-1)
+  for (i=0; i<N_1; i++) {
+    t_index idx = j = i+1;
+    switch (method) {
+    case METHOD_METR_WARD:
+      min = dist.ward_initial(i,j);
+      break;
+    default:
+      min = dist.sqeuclidean(i,j);
+    }
+    for(j++; min!=min && j<N; j++) { // eliminate NaN if possible
+      switch (method) {
+      case METHOD_METR_WARD:
+        min = dist.ward_initial(i,j);
+        break;
+      default:
+        min = dist.sqeuclidean(i,j);
+      }
+      idx = j;
+    }
+    for( ; j<N; j++) {
+      t_float tmp;
+      switch (method) {
+      case METHOD_METR_WARD:
+        tmp = dist.ward_initial(i,j);
+        break;
+      default:
+        tmp = dist.sqeuclidean(i,j);
+      }
+      if (tmp<min) {
+        min = tmp;
+        idx = j;
+      }
+    }
+    switch (method) {
+    case METHOD_METR_WARD:
+      mindist[i] = t_dissimilarity::ward_initial_conversion(min);
+      break;
+    default:
+      mindist[i] = min;
+    }
+    n_nghbr[i] = idx;
+  }
+
+  // Put the minimal distances into a heap structure to make the repeated global
+  // minimum searches fast.
+  nn_distances.heapify(mindist);
+
+  // Main loop: We have N-1 merging steps.
+  for (i=0; i<N_1; i++) {
+    idx1 = nn_distances.argmin();
+
+    while ( active_nodes.is_inactive(n_nghbr[idx1]) ) {
+      // Recompute the minimum mindist[idx1] and n_nghbr[idx1].
+      n_nghbr[idx1] = j = active_nodes.succ[idx1]; // exists, maximally N-1
+      switch (method) {
+      case METHOD_METR_WARD:
+        min = dist.ward(idx1,j);
+        for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
+          t_float const tmp = dist.ward(idx1,j);
+          if (tmp<min) {
+            min = tmp;
+            n_nghbr[idx1] = j;
+          }
+        }
+        break;
+      default:
+        min = dist.sqeuclidean(idx1,j);
+        for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
+          t_float const tmp = dist.sqeuclidean(idx1,j);
+          if (tmp<min) {
+            min = tmp;
+            n_nghbr[idx1] = j;
+          }
+        }
+      }
+      /* Update the heap with the new true minimum and search for the (possibly
+         different) minimal entry. */
+      nn_distances.update_geq(idx1, min);
+      idx1 = nn_distances.argmin();
+    }
+
+    nn_distances.heap_pop(); // Remove the current minimum from the heap.
+    idx2 = n_nghbr[idx1];
+
+    // Write the newly found minimal pair of nodes to the output array.
+    node1 = row_repr[idx1];
+    node2 = row_repr[idx2];
+
+    Z2.append(node1, node2, mindist[idx1]);
+
+    switch (method) {
+    case METHOD_METR_WARD:
+    case METHOD_METR_CENTROID:
+      dist.merge_inplace(idx1, idx2);
+      break;
+    case METHOD_METR_MEDIAN:
+      dist.merge_inplace_weighted(idx1, idx2);
+      break;
+    }
+
+    // Index idx2 now represents the new (merged) node with label N+i.
+    row_repr[idx2] = N+i;
+    // Remove idx1 from the list of active indices (active_nodes).
+    active_nodes.remove(idx1);  // TBD later!!!
+
+    // Update the distance matrix
+    switch (method) {
+    case METHOD_METR_WARD:
+      /*
+        Ward linkage.
+
+        Shorter and longer distances can occur, not smaller than min(d1,d2)
+        but maybe bigger than max(d1,d2).
+      */
+      // Update the distance matrix in the range [start, idx1).
+      for (j=active_nodes.start; j<idx1; j=active_nodes.succ[j]) {
+        if (n_nghbr[j] == idx2) {
+          n_nghbr[j] = idx1; // invalidate
+        }
+      }
+      // Update the distance matrix in the range (idx1, idx2).
+      for ( ; j<idx2; j=active_nodes.succ[j]) {
+        t_float const tmp = dist.ward(j, idx2);
+        if (tmp<mindist[j]) {
+          nn_distances.update_leq(j, tmp);
+          n_nghbr[j] = idx2;
+        }
+        else if (n_nghbr[j]==idx2) {
+          n_nghbr[j] = idx1; // invalidate
+        }
+      }
+      // Find the nearest neighbor for idx2.
+      if (idx2<N_1) {
+        n_nghbr[idx2] = j = active_nodes.succ[idx2]; // exists, maximally N-1
+        min = dist.ward(idx2,j);
+        for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
+          t_float const tmp = dist.ward(idx2,j);
+          if (tmp<min) {
+            min = tmp;
+            n_nghbr[idx2] = j;
+          }
+        }
+        nn_distances.update(idx2, min);
+      }
+      break;
+
+    default:
+      /*
+        Centroid and median linkage.
+
+        Shorter and longer distances can occur, not bigger than max(d1,d2)
+        but maybe smaller than min(d1,d2).
+      */
+      for (j=active_nodes.start; j<idx2; j=active_nodes.succ[j]) {
+        t_float const tmp = dist.sqeuclidean(j, idx2);
+        if (tmp<mindist[j]) {
+          nn_distances.update_leq(j, tmp);
+          n_nghbr[j] = idx2;
+        }
+        else if (n_nghbr[j] == idx2)
+          n_nghbr[j] = idx1; // invalidate
+      }
+      // Find the nearest neighbor for idx2.
+      if (idx2<N_1) {
+        n_nghbr[idx2] = j = active_nodes.succ[idx2]; // exists, maximally N-1
+        min = dist.sqeuclidean(idx2,j);
+        for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
+          t_float const tmp = dist.sqeuclidean(idx2, j);
+          if (tmp<min) {
+            min = tmp;
+            n_nghbr[idx2] = j;
+          }
+        }
+        nn_distances.update(idx2, min);
+      }
+    }
+  }
+}
+
+template <const unsigned char method, typename t_dissimilarity>
+static void generic_linkage_vector_alternative(const t_index N,
+                                               t_dissimilarity & dist,
+                                               cluster_result & Z2) {
+  /*
+    N: integer, number of data points
+    dist: function pointer to the metric
+    Z2: output data structure
+
+    This algorithm is valid for the distance update methods
+    "Ward", "centroid" and "median" only!
+
+    This implementation does not give defined results when NaN or Inf values
+    are returned by the distance function.
+  */
+  const t_index N_1 = N-1;
   t_index i, j=0; // loop variables
   t_index idx1, idx2; // row and column indices
 
   auto_array_ptr<t_index> n_nghbr(2*N-2); // array of nearest neighbors
   auto_array_ptr<t_float> mindist(2*N-2); // distances to the nearest neighbors
 
-  doubly_linked_list AR(N+N_1); // active rows
-  binary_min_heap minidx(N_1, 2*N-2,1); // minimum heap structure for the nearest neighbors
+  doubly_linked_list active_nodes(N+N_1);
+  binary_min_heap nn_distances(N_1, 2*N-2, 1); // minimum heap structure for the
+                               // distance to the nearest neighbor of each point
 
   t_float min; // minimum for nearest-neighbor searches
 
@@ -1223,7 +1476,7 @@ static void generic_linkage_vector(const t_index N,
     t_index idx = j = 0;
     switch (method) {
     case METHOD_METR_WARD:
-      min = dist.ward(i,j);
+      min = dist.ward_initial(i,j);
       break;
     default:
       min = dist.sqeuclidean(i,j);
@@ -1231,7 +1484,7 @@ static void generic_linkage_vector(const t_index N,
     for(j++; min!=min && j<i; j++) { // eliminate NaN if possible
       switch (method) {
       case METHOD_METR_WARD:
-        min = dist.ward(i,j);
+        min = dist.ward_initial(i,j);
         break;
       default:
         min = dist.sqeuclidean(i,j);
@@ -1242,7 +1495,7 @@ static void generic_linkage_vector(const t_index N,
       t_float tmp;
       switch (method) {
       case METHOD_METR_WARD:
-        tmp = dist.ward(i,j);
+        tmp = dist.ward_initial(i,j);
         break;
       default:
         tmp = dist.sqeuclidean(i,j);
@@ -1252,13 +1505,19 @@ static void generic_linkage_vector(const t_index N,
         idx = j;
       }
     }
-    mindist[i] = min;
+    switch (method) {
+    case METHOD_METR_WARD:
+      mindist[i] = t_dissimilarity::ward_initial_conversion(min);
+      break;
+    default:
+      mindist[i] = min;
+    }
     n_nghbr[i] = idx;
   }
 
   // Put the minimal distances into a heap structure to make the repeated global
   // minimum searches fast.
-  minidx.heapify(mindist);
+  nn_distances.heapify(mindist);
 
   // Main loop: We have N-1 merging steps.
   for (i=N; i<N+N_1; i++) {
@@ -1276,19 +1535,19 @@ static void generic_linkage_vector(const t_index N,
       nodes are N,…,2N−2).
 
       Invalid nearest neighbors are not recognized by the fact that the stored
-      distance is smaller than the actual distance, but the list AR maintains
-      a flag whether a node is inactive. If n_nghbr[i] points to an active node,
-      the entries minidx[i] and n_nghbr[i] are valid, otherwise they must be
-      recomputed.
+      distance is smaller than the actual distance, but the list active_nodes
+      maintains a flag whether a node is inactive. If n_nghbr[i] points to an
+      active node, the entries nn_distances[i] and n_nghbr[i] are valid, otherwise
+      they must be recomputed.
     */
-    idx1 = minidx;
-    while ( AR.is_inactive(n_nghbr[idx1]) ) {
+    idx1 = nn_distances.argmin();
+    while ( active_nodes.is_inactive(n_nghbr[idx1]) ) {
       // Recompute the minimum mindist[idx1] and n_nghbr[idx1].
-      n_nghbr[idx1] = j = AR.start;
+      n_nghbr[idx1] = j = active_nodes.start;
       switch (method) {
       case METHOD_METR_WARD:
         min = dist.ward_extended(idx1,j);
-        for (j=AR.succ[j]; j<idx1; j=AR.succ[j]) {
+        for (j=active_nodes.succ[j]; j<idx1; j=active_nodes.succ[j]) {
           t_float tmp = dist.ward_extended(idx1,j);
           if (tmp<min) {
             min = tmp;
@@ -1298,21 +1557,23 @@ static void generic_linkage_vector(const t_index N,
         break;
       default:
         min = dist.sqeuclidean_extended(idx1,j);
-        for (j=AR.succ[j]; j<idx1; j=AR.succ[j]) {
-          t_float tmp = dist.sqeuclidean_extended(idx1,j);
+        for (j=active_nodes.succ[j]; j<idx1; j=active_nodes.succ[j]) {
+          t_float const tmp = dist.sqeuclidean_extended(idx1,j);
           if (tmp<min) {
             min = tmp;
             n_nghbr[idx1] = j;
           }
         }
       }
-      minidx.update_geq(idx1, min); // Update the heap with the new true minimum.
-      idx1 = minidx; // And search for the (possibly different) minimal entry.
+      /* Update the heap with the new true minimum and search for the (possibly
+         different) minimal entry. */
+      nn_distances.update_geq(idx1, min);
+      idx1 = nn_distances.argmin();
     }
 
     idx2 = n_nghbr[idx1];
-    AR.remove(idx1);
-    AR.remove(idx2);
+    active_nodes.remove(idx1);
+    active_nodes.remove(idx2);
 
     Z2.append(idx1, idx2, mindist[idx1]);
 
@@ -1328,7 +1589,7 @@ static void generic_linkage_vector(const t_index N,
         break;
       }
 
-      n_nghbr[i] = AR.start;
+      n_nghbr[i] = active_nodes.start;
       if (method==METHOD_METR_WARD) {
         /*
           Ward linkage.
@@ -1336,9 +1597,9 @@ static void generic_linkage_vector(const t_index N,
           Shorter and longer distances can occur, not smaller than min(d1,d2)
           but maybe bigger than max(d1,d2).
         */
-        min = dist.ward_extended(AR.start, i);
+        min = dist.ward_extended(active_nodes.start, i);
         // TBD: avoid NaN
-        for (j=AR.succ[AR.start]; j<i; j=AR.succ[j]) {
+        for (j=active_nodes.succ[active_nodes.start]; j<i; j=active_nodes.succ[j]) {
           t_float tmp = dist.ward_extended(j, i);
           if (tmp<min) {
             min = tmp;
@@ -1353,9 +1614,9 @@ static void generic_linkage_vector(const t_index N,
           Shorter and longer distances can occur, not bigger than max(d1,d2)
           but maybe smaller than min(d1,d2).
         */
-        min = dist.sqeuclidean_extended(AR.start, i);
+        min = dist.sqeuclidean_extended(active_nodes.start, i);
         // TBD: avoid NaN
-        for (j=AR.succ[AR.start]; j<i; j=AR.succ[j]) {
+        for (j=active_nodes.succ[active_nodes.start]; j<i; j=active_nodes.succ[j]) {
           t_float tmp = dist.sqeuclidean_extended(j, i);
           if (tmp<min) {
             min = tmp;
@@ -1363,12 +1624,12 @@ static void generic_linkage_vector(const t_index N,
           }
         }
       }
-      if (idx2<AR.start)  {
-        minidx.remove(AR.start);
+      if (idx2<active_nodes.start)  {
+        nn_distances.remove(active_nodes.start);
       } else {
-        minidx.remove(idx2);
+        nn_distances.remove(idx2);
       }
-      minidx.replace(idx1, i, min);
+      nn_distances.replace(idx1, i, min);
     }
   }
 }

@@ -19,7 +19,7 @@ also be obtained at <http://math.stanford.edu/~muellner/fastcluster.html>.
 '''
 
 __all__ = ['single', 'complete', 'average', 'weighted', 'ward', 'centroid', 'median', 'linkage', 'linkage_vector']
-__version_info__ = ('1', '1', '3')
+__version_info__ = ('1', '1', '4')
 __version__ = '.'.join(__version_info__)
 
 from numpy import double, empty, array, ndarray, var, cov, dot, bool, expand_dims, ceil, sqrt
@@ -467,7 +467,7 @@ metric='sokalmichener' is an alias for 'matching'.'''
     elif metric=='correlation':
         X = X-expand_dims(X.mean(axis=1),1)
         metric='cosine'
-    elif type(metric)!=str:
+    elif not isinstance(metric, str):
         assert extraarg is None
         metric, extraarg = 'USER', metric
     elif metric!='minkowski':

@@ -109,14 +109,22 @@ PyMODINIT_FUNC init_fastcluster(void)  {
   import_array();  // Must be present for NumPy. Called first after above line.
 }
 
+static void end_allow_threads(PyThreadState * PythonThreadSave) {
+  if (PythonThreadSave) { // Only restore if the state has been saved
+      PyEval_RestoreThread(PythonThreadSave);
+    }
+}
+
 /*
   Interface to Python, part 1:
   The input is a dissimilarity matrix.
 */
+
 static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
   PyArrayObject * D, * Z;
   long int N = 0;
   unsigned char method;
+  PyThreadState * PythonThreadSave = NULL;
 
   try{
     // Parse the input arguments
@@ -148,6 +156,14 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
                       "Data is too big, index overflow.");
       return NULL;
     }
+
+    if (method>METHOD_METR_MEDIAN) {
+      PyErr_SetString(PyExc_IndexError, "Invalid method index.");
+      return NULL;
+    }
+
+    // Allow threads!
+    PythonThreadSave = PyEval_SaveThread();
 
     t_float * const D_ = reinterpret_cast<t_float *>(D->data);
     cluster_result Z2(N-1);
@@ -186,12 +202,8 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
     case METHOD_METR_CENTROID:
       generic_linkage<METHOD_METR_CENTROID, t_index>(N, D_, members, Z2);
       break;
-    case METHOD_METR_MEDIAN:
+    default: // case METHOD_METR_MEDIAN
       generic_linkage<METHOD_METR_MEDIAN, t_index>(N, D_, NULL, Z2);
-      break;
-    default:
-      PyErr_SetString(PyExc_IndexError, "Invalid method index.");
-      return NULL;
     }
 
     if (method==METHOD_METR_WARD ||
@@ -210,30 +222,28 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
     }
 
   } // try
-  catch (std::bad_alloc&) {
+  catch (const std::bad_alloc&) {
+    end_allow_threads(PythonThreadSave);
     return PyErr_NoMemory();
   }
-  catch(std::exception& e){
+  catch(const std::exception& e){
+    end_allow_threads(PythonThreadSave);
     PyErr_SetString(PyExc_StandardError, e.what());
     return NULL;
   }
   catch(...){
+    end_allow_threads(PythonThreadSave);
     PyErr_SetString(PyExc_StandardError,
                     "C++ exception (unknown reason). Please send a bug report.");
     return NULL;
   }
+  PyEval_RestoreThread(PythonThreadSave);
   Py_RETURN_NONE;
 }
 
 /*
    Part 2: Clustering on vector data
 */
-
-/*
-   Helper class: Throw this if calling the Python interpreter from within
-   C returned an error.
-*/
-class pythonerror {};
 
 enum {
   // metrics
@@ -260,6 +270,12 @@ enum {
   METRIC_INVALID         = 20, // sentinel
   METRIC_JACCARD_BOOL    = 21, // separate function for Jaccard metric on Boolean
 };                             // input data
+
+/*
+   Helper class: Throw this if calling the Python interpreter from within
+   C returned an error.
+*/
+class pythonerror {};
 
 /*
   This class handles all the information about the dissimilarity
@@ -433,11 +449,8 @@ public:
         this->userfn = extraarg;
         distfn = &python_dissimilarity::user;
         break;
-      case METRIC_JACCARD_BOOL:
+      default: // case METRIC_JACCARD_BOOL:
         distfn = &python_dissimilarity::jaccard_bool;
-        break;
-      default:
-        throw 0;
       }
       break;
 
@@ -475,21 +488,40 @@ public:
   }
 
   void merge(const t_index i, const t_index j, const t_index newnode) const {
-    t_float const * Pi = i<N ? Xa+i*dim : Xnew+(i-N)*dim;
-    t_float const * Pj = j<N ? Xa+j*dim : Xnew+(j-N)*dim;
+    t_float const * const Pi = i<N ? Xa+i*dim : Xnew+(i-N)*dim;
+    t_float const * const Pj = j<N ? Xa+j*dim : Xnew+(j-N)*dim;
     for(t_index k=0; k<dim; k++) {
       Xnew[(newnode-N)*dim+k] = (Pi[k]*static_cast<t_float>(members[i]) +
-                             Pj[k]*static_cast<t_float>(members[j])) /
+                                 Pj[k]*static_cast<t_float>(members[j])) /
         static_cast<t_float>(members[i]+members[j]);
     }
     members[newnode] = members[i]+members[j];
   }
 
   void merge_weighted(const t_index i, const t_index j, const t_index newnode) const {
-    t_float const * Pi = i<N ? Xa+i*dim : Xnew+(i-N)*dim;
-    t_float const * Pj = j<N ? Xa+j*dim : Xnew+(j-N)*dim;
+    t_float const * const Pi = i<N ? Xa+i*dim : Xnew+(i-N)*dim;
+    t_float const * const Pj = j<N ? Xa+j*dim : Xnew+(j-N)*dim;
     for(t_index k=0; k<dim; k++) {
-      Xnew[(newnode-N)*dim+k] = (Pi[k]+Pj[k])/2.;
+      Xnew[(newnode-N)*dim+k] = (Pi[k]+Pj[k])*.5;
+    }
+  }
+
+  void merge_inplace(const t_index i, const t_index j) const {
+    t_float const * const Pi = Xa+i*dim;
+    t_float * const Pj = Xa+j*dim;
+    for(t_index k=0; k<dim; k++) {
+      Pj[k] = (Pi[k]*static_cast<t_float>(members[i]) +
+               Pj[k]*static_cast<t_float>(members[j])) /
+        static_cast<t_float>(members[i]+members[j]);
+    }
+    members[j] += members[i];
+  }
+
+  void merge_inplace_weighted(const t_index i, const t_index j) const {
+    t_float const * const Pi = Xa+i*dim;
+    t_float * const Pj = Xa+j*dim;
+    for(t_index k=0; k<dim; k++) {
+      Pj[k] = (Pi[k]+Pj[k])*.5;
     }
   }
 
@@ -503,6 +535,16 @@ public:
     t_float mi = static_cast<t_float>(members[i]);
     t_float mj = static_cast<t_float>(members[j]);
     return sqeuclidean(i,j)*mi*mj/(mi+mj);
+  }
+
+  inline t_float ward_initial(const t_index i, const t_index j) const {
+    // alias for sqeuclidean
+    // Factor 2!!!
+    return sqeuclidean(i,j);
+  }
+
+  inline static t_float ward_initial_conversion(const t_float min) {
+    return min*.5;
   }
 
   inline t_float ward_extended(const t_index i, const t_index j) const {
@@ -784,6 +826,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
   PyArrayObject * X, * Z;
   unsigned char method, metric;
   PyObject * extraarg;
+  PyThreadState * PythonThreadSave = NULL;
 
   try{
     // Parse the input arguments
@@ -793,7 +836,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
                           &method,           // unsigned char
                           &metric,           // unsigned char
                           &extraarg )) {     // Python object
-      throw pythonerror(); // Error if the arguments have the wrong type.
+      return NULL;
     }
 
     if (X->nd != 2) {
@@ -805,14 +848,14 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
       // N must be at least 1.
       PyErr_SetString(PyExc_ValueError,
                       "At least one element is needed for clustering.");
-      throw pythonerror();
+      return NULL;
     }
 
     npy_intp const dim = X->dimensions[1];
     if (dim < 1 ) {
       PyErr_SetString(PyExc_ValueError,
                       "Invalid dimension of the data set.");
-      throw pythonerror();
+      return NULL;
     }
 
     // (1)
@@ -827,7 +870,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
         (N-1)>>(T_FLOAT_MANT_DIG-1) > 0) {
       PyErr_SetString(PyExc_ValueError,
                       "Data is too big, index overflow.");
-      throw pythonerror();
+      return NULL;
     }
 
     cluster_result Z2(N-1);
@@ -840,7 +883,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
     if ((method!=METHOD_METR_SINGLE && metric!=METRIC_EUCLIDEAN) ||
         metric>=METRIC_INVALID) {
       PyErr_SetString(PyExc_IndexError, "Invalid metric index.");
-      throw pythonerror();
+      return NULL;
     }
 
     if (PyArray_ISBOOL(X)) {
@@ -859,13 +902,29 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
         metric!=METRIC_USER) {
       PyErr_SetString(PyExc_TypeError,
                       "No extra parameter is allowed for this metric.");
-      throw pythonerror();
+      return NULL;
     }
 
-    bool temp_point_array = (method!=METHOD_METR_SINGLE);
+    /* temp_point_array must be true if the alternative algorithm
+       is used below (currently for the centroid and median methods). */
+    bool temp_point_array = (method==METHOD_METR_CENTROID ||
+                             method==METHOD_METR_MEDIAN);
 
     python_dissimilarity dist(X, members, method, metric, extraarg,
                               temp_point_array);
+
+    if (method!=METHOD_METR_SINGLE &&
+        method!=METHOD_METR_WARD &&
+	    method!=METHOD_METR_CENTROID &&
+        method!=METHOD_METR_MEDIAN) {
+      PyErr_SetString(PyExc_IndexError, "Invalid method index.");
+      return NULL;
+    }
+
+    // Allow threads!
+    if (metric!=METRIC_USER) {
+      PythonThreadSave = PyEval_SaveThread();
+    }
 
     switch (method) {
     case METHOD_METR_SINGLE:
@@ -875,14 +934,10 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
       generic_linkage_vector<METHOD_METR_WARD>(N, dist, Z2);
       break;
     case METHOD_METR_CENTROID:
-      generic_linkage_vector<METHOD_METR_CENTROID>(N, dist, Z2);
+      generic_linkage_vector_alternative<METHOD_METR_CENTROID>(N, dist, Z2);
       break;
-    case METHOD_METR_MEDIAN:
-      generic_linkage_vector<METHOD_METR_MEDIAN>(N, dist, Z2);
-      break;
-    default:
-      PyErr_SetString(PyExc_IndexError, "Invalid method index.");
-      throw pythonerror();
+    default: // case METHOD_METR_MEDIAN:
+      generic_linkage_vector_alternative<METHOD_METR_MEDIAN>(N, dist, Z2);
     }
 
     if (method==METHOD_METR_WARD ||
@@ -901,21 +956,24 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
     }
 
   } // try
-  catch (std::bad_alloc&) {
+  catch (const std::bad_alloc&) {
+    end_allow_threads(PythonThreadSave);
     return PyErr_NoMemory();
   }
-  catch(std::exception& e){
+  catch(const std::exception& e){
+    end_allow_threads(PythonThreadSave);
     PyErr_SetString(PyExc_StandardError, e.what());
     return NULL;
   }
-  catch(pythonerror){
+  catch(const pythonerror){
     return NULL;
   }
   catch(...){
+    end_allow_threads(PythonThreadSave);
     PyErr_SetString(PyExc_StandardError,
                     "C++ exception (unknown reason). Please send a bug report.");
     return NULL;
   }
+  end_allow_threads(PythonThreadSave);
   Py_RETURN_NONE;
 }
-

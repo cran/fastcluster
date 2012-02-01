@@ -69,3 +69,16 @@ Version 1.1.2, 10/11/2011
 Version 1.1.3, 12/10/2011
 
   • Replaced ptrdiff_t by std::ptrdiff_t, as GCC 4.6.1 complains about this.
+
+Version 1.1.4, 02/01/2012
+
+  • Release the GIL in the Python package, so that it can be used efficiently
+    in multithreaded applications.
+
+  • Improved performance for the "Ward" method with vector input.
+
+  • The "members" parameter in the R interface is now treated as a double
+    array, not an integer array as before. This was a slight incompatibility
+    with the stats::hclust function. Thanks to Matthias Studer, University of
+    Geneva, for pointing this out.
+
