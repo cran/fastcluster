@@ -85,8 +85,8 @@
 %\VignetteIndexEntry{User's manual}
 \title{The \textit{fastcluster} package: User's manual}
 \author{\href{http://math.stanford.edu/~muellner}{Daniel Müllner}}
-\date{February 1, 2012}
-\subtitle{Version 1.1.4}
+\date{February 14, 2012}
+\subtitle{Version 1.1.5}
 \maketitle
 
 \makeatletter
@@ -113,7 +113,7 @@ This document describes the usage for the two interfaces for R and Python and is
 
 If you use the fastcluster package for scientific work, please cite it as:
 \begin{quote}
-Daniel Müllner, \textit{fastcluster: Fast hierarchical clustering routines for R and Python}, Version 1.1.4, 2011. Available at CRAN \url{http://cran.r-project.org} and \url{http:///math.stanford.edu/~muellner}.
+Daniel Müllner, \textit{fastcluster: Fast hierarchical clustering routines for R and Python}, Version 1.1.5, 2012. Available at CRAN \url{http://cran.r-project.org} and \url{http:///math.stanford.edu/~muellner}.
 \end{quote}
 
 \tableofcontents
@@ -160,7 +160,7 @@ The argument $d$ is a condensed distance matrix, as it is produced by \dist.
 
 The argument \textit{method} is one of the strings \textit{\q single\q}, \textit{\q complete\q}, \textit{\q average\q}, \textit{\q mcquitty\q}, \textit{\q centroid\q}, \textit{\q median\q}, \textit{\q ward\q}, or an unambiguous abbreviation thereof.
 
-The argument \textit{members} specifies the sizes of the initial nodes, ie.\ the number of observations in the initial clusters. The default value \texttt{NULL} says that all initial nodes are singletons, ie.\ have size 1. Otherwise, \textit{members} must be a vector of integer values, one for each input point.
+The argument \textit{members} specifies the sizes of the initial nodes, ie.\ the number of observations in the initial clusters. The default value \texttt{NULL} says that all initial nodes are singletons, ie.\ have size 1. Otherwise, \textit{members} must be a vector whose size is the number of input points. The vector is processed as a \href{http://stat.ethz.ch/R-manual/R-patched/library/base/html/double.html}{\texttt{double}} array so that not only integer cardinalities of nodes can be accounted for but also weighted nodes with real weights.
 
 The general scheme of the agglomerative clustering procedure is as follows:
 \begin{enumerate}

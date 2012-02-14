@@ -82,3 +82,7 @@ Version 1.1.4, 02/01/2012
     with the stats::hclust function. Thanks to Matthias Studer, University of
     Geneva, for pointing this out.
 
+Version 1.1.5, 02/14/2012
+
+  • Updated the "members" specification in the User's manual to reflect the
+    recent change.
