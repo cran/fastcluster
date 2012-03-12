@@ -86,3 +86,11 @@ Version 1.1.5, 02/14/2012
 
   • Updated the "members" specification in the User's manual to reflect the
     recent change.
+
+Version 1.1.6, 03/12/2012
+
+  • Bug fix related to GIL release in the Python wrapper. Thanks to Massimo
+    Di Stefano for the bug report.
+
+  • Small compatibility changes in the Python test scripts (again thanks to
+    Massimo Di Stefano for the report).

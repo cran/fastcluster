@@ -11,6 +11,8 @@
 // __STDC_LIMIT_MACROS is defined.
 #define __STDC_LIMIT_MACROS
 
+#define NPY_NO_DEPRECATED_API
+
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
@@ -165,7 +167,7 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
     // Allow threads!
     PythonThreadSave = PyEval_SaveThread();
 
-    t_float * const D_ = reinterpret_cast<t_float *>(D->data);
+    t_float * const D_ = reinterpret_cast<t_float *>(PyArray_DATA(D));
     cluster_result Z2(N-1);
     auto_array_ptr<t_index> members;
     // For these methods, the distance update formula needs the number of
@@ -212,7 +214,7 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
       Z2.sqrt();
     }
 
-    t_float * const Z_ = reinterpret_cast<t_float *>(Z->data);
+    t_float * const Z_ = reinterpret_cast<t_float *>(PyArray_DATA(Z));
     if (method==METHOD_METR_CENTROID ||
         method==METHOD_METR_MEDIAN) {
       generate_SciPy_dendrogram<true>(Z_, Z2, N);
@@ -311,9 +313,9 @@ public:
                         const unsigned char metric,
                         PyObject * const extraarg,
                         bool temp_point_array)
-    : Xa(reinterpret_cast<t_float *>(Xarg->data)),
-      dim(Xarg->dimensions[1]),
-      N(Xarg->dimensions[0]),
+    : Xa(reinterpret_cast<t_float *>(PyArray_DATA(Xarg))),
+      dim(PyArray_DIM(Xarg, 1)),
+      N(PyArray_DIM(Xarg, 0)),
       members(members),
       postprocessfn(NULL),
       V(NULL)
@@ -339,12 +341,12 @@ public:
         if (PyErr_Occurred()) {
           throw pythonerror();
         }
-        if (V->dimensions[0]!=dim) {
+        if (PyArray_DIM(V, 0)!=dim) {
           PyErr_SetString(PyExc_ValueError,
           "The variance vector must have the same dimensionality as the data.");
           throw pythonerror();
         }
-        V_data = reinterpret_cast<t_float *>(V->data);
+        V_data = reinterpret_cast<t_float *>(PyArray_DATA(V));
         distfn = &python_dissimilarity::seuclidean;
         postprocessfn = &cluster_result::sqrt;
         break;
@@ -401,12 +403,12 @@ public:
         if (PyErr_Occurred()) {
           throw pythonerror();
         }
-        if (V->dimensions[0]!=N || V->dimensions[1]!=dim) {
+        if (PyArray_DIM(V, 0)!=N || PyArray_DIM(V, 1)!=dim) {
           PyErr_SetString(PyExc_ValueError,
             "The inverse covariance matrix has the wrong size.");
           throw pythonerror();
         }
-        V_data = reinterpret_cast<t_float *>(V->data);
+        V_data = reinterpret_cast<t_float *>(PyArray_DATA(V));
         distfn = &python_dissimilarity::mahalanobis;
         postprocessfn = &cluster_result::sqrt;
         break;
@@ -839,11 +841,11 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
       return NULL;
     }
 
-    if (X->nd != 2) {
+    if (PyArray_NDIM(X) != 2) {
       PyErr_SetString(PyExc_ValueError,
                       "The input array must be two-dimensional.");
     }
-    npy_intp const N = X->dimensions[0];
+    npy_intp const N = PyArray_DIM(X, 0);
     if (N < 1 ) {
       // N must be at least 1.
       PyErr_SetString(PyExc_ValueError,
@@ -851,7 +853,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
       return NULL;
     }
 
-    npy_intp const dim = X->dimensions[1];
+    npy_intp const dim = PyArray_DIM(X, 1);
     if (dim < 1 ) {
       PyErr_SetString(PyExc_ValueError,
                       "Invalid dimension of the data set.");
@@ -915,7 +917,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
 
     if (method!=METHOD_METR_SINGLE &&
         method!=METHOD_METR_WARD &&
-	    method!=METHOD_METR_CENTROID &&
+        method!=METHOD_METR_CENTROID &&
         method!=METHOD_METR_MEDIAN) {
       PyErr_SetString(PyExc_IndexError, "Invalid method index.");
       return NULL;
@@ -947,7 +949,7 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
 
     dist.postprocess(Z2);
 
-    t_float * const Z_ = reinterpret_cast<t_float *>(Z->data);
+    t_float * const Z_ = reinterpret_cast<t_float *>(PyArray_DATA(Z));
     if (method!=METHOD_METR_SINGLE) {
       generate_SciPy_dendrogram<true>(Z_, Z2, N);
     }
@@ -955,6 +957,16 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
       generate_SciPy_dendrogram<false>(Z_, Z2, N);
     }
 
+    /* Hack: prevent PyEval_RestoreThread from being called a second time
+       in the "catch" block, in case the first PyEval_RestoreThread in
+       end_allow_threads throws an exception.
+
+       (Can PyEval_RestoreThread throw an exception? I don't know, so I do this
+       to be on the safe side.)
+    */
+    PyThreadState * const PythonThreadSave2 = PythonThreadSave;
+    PythonThreadSave = NULL;
+    end_allow_threads(PythonThreadSave2);
   } // try
   catch (const std::bad_alloc&) {
     end_allow_threads(PythonThreadSave);
@@ -974,6 +986,5 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
                     "C++ exception (unknown reason). Please send a bug report.");
     return NULL;
   }
-  end_allow_threads(PythonThreadSave);
   Py_RETURN_NONE;
 }

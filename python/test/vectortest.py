@@ -78,7 +78,6 @@ def test_all(n,dim):
       Z2 = fc.linkage_vector(pcd, method, metric)
     test(Z2, method, D)
 
-  #print pcd
   D = pdist(pcd)
   for method in ['ward', 'centroid', 'median']:
     Z2 = fc.linkage_vector(pcd, method)
@@ -103,7 +102,7 @@ def test(Z2, method, D):
       for j in xrange(n-1):
         mins[j] = np.min(Ds[j,j+1:])
       gmin = np.min(mins)
-      if abs(Z2[i,2]-gmin)/max(abs(Z2[i,2]),abs(gmin)) > rtol and \
+      if abs(Z2[i,2]-gmin) > max(abs(Z2[i,2]),abs(gmin))*rtol and \
             abs(Z2[i,2]-gmin)>abstol:
           raise AssertionError('Not the global minimum in step {2}: {0}, {1}'.format(Z2[i,2], gmin,i), squareform(D))
       i1, i2 = np.take(row_repr, I[i,:])
@@ -115,7 +114,7 @@ def test(Z2, method, D):
         raise AssertionError('Convention violated.', squareform(D))
       if i1>i2:
         i1, i2 = i2, i1
-      if abs(Ds[i1,i2]-gmin)/max(abs(Ds[i1,i2]),abs(gmin)) > rtol and \
+      if abs(Ds[i1,i2]-gmin) > max(abs(Ds[i1,i2]),abs(gmin))*rtol and \
             abs(Ds[i1,i2]-gmin)>abstol:
           raise AssertionError('The global minimum is not at the right place in step {5}: ({0}, {1}): {2} != {3}. Difference: {4}'
                                .format(i1, i2, Ds[i1, i2], gmin, Ds[i1, i2]-gmin, i), squareform(D))
@@ -124,11 +123,14 @@ def test(Z2, method, D):
       s2 = size[i2]
       S = s1+s2
       if method=='single':
-          Ds[:i1,i2]   = np.min( Ds[:i1,(i1,i2)],axis=1)
+          if i1>0: # mostly unnecessary; workaround for a bug/feature in NumPy 1.7.0.dev
+          # see http://projects.scipy.org/numpy/ticket/2078 
+              Ds[:i1,i2]   = np.min( Ds[:i1,(i1,i2)],axis=1)
           Ds[i1:i2,i2] = np.minimum(Ds[i1,i1:i2],Ds[i1:i2,i2])
           Ds[i2,i2:]   = np.min( Ds[(i1,i2),i2:],axis=0)
       elif method=='complete':
-          Ds[:i1,i2]   = np.max( Ds[:i1,(i1,i2)],axis=1)
+          if i1>0:
+              Ds[:i1,i2]   = np.max( Ds[:i1,(i1,i2)],axis=1)
           Ds[i1:i2,i2] = np.maximum(Ds[i1,i1:i2],Ds[i1:i2,i2])
           Ds[i2,i2:]   = np.max( Ds[(i1,i2),i2:],axis=0)
       elif method=='average':
@@ -136,7 +138,8 @@ def test(Z2, method, D):
           Ds[i1:i2,i2] = ( Ds[i1,i1:i2]*s1 + Ds[i1:i2,i2]*s2 ) / S
           Ds[i2,i2:]   = ( Ds[i1,i2:]*s1 + Ds[i2,i2:]*s2 ) / S
       elif method=='weighted':
-          Ds[:i1,i2]   = np.mean( Ds[:i1,(i1,i2)],axis=1)
+          if i1>0:
+              Ds[:i1,i2]   = np.mean( Ds[:i1,(i1,i2)],axis=1)
           Ds[i1:i2,i2] = ( Ds[i1,i1:i2] + Ds[i1:i2,i2] ) / 2
           Ds[i2,i2:]   = np.mean( Ds[(i1,i2),i2:],axis=0)
       elif method=='ward':
