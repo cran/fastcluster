@@ -2,20 +2,25 @@
 # -*- coding: utf-8 -*-
 
 # TBD test single on integer matrices for hamming/jaccard
-
-print u'''Test program for the 'fastcluster' package.
+import sys
+if sys.hexversion < 0x03000000: # uniform unicode handling for both Python 2.x and 3.x
+    def u(x):
+        return x.decode('utf-8')
+else:
+    def u(x):
+        return x
+print(u('''Test program for the 'fastcluster' package.
 
 Copyright © 2011 Daniel Müllner, <http://math.stanford.edu/~muellner>
 
 If everything is OK, the test program will run forever, without an error
 message.
-'''.encode('utf-8')
+'''))
 import fastcluster as fc
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 import math
 import sys
-
 
 import atexit
 def print_seed():
@@ -89,23 +94,23 @@ def test(Z2, method, D):
     I = np.array(Z2[:,:2], dtype=int)
 
     Ds = squareform(D)
-    n = Ds.shape[0]
+    n = len(Ds)
     row_repr = np.arange(2*n-1)
     row_repr[n:] = -1
     size = np.ones(n, dtype=np.int)
 
-    Ds.flat[::n+1] = np.inf
+    np.fill_diagonal(Ds, np.nan)
 
     mins = np.empty(n-1)
 
-    for i in xrange(n-1):
-      for j in xrange(n-1):
-        mins[j] = np.min(Ds[j,j+1:])
-      gmin = np.min(mins)
+    for i in range(n-1):
+      for j in range(n-1):
+        mins[j] = np.nanmin(Ds[j,j+1:])
+      gmin = np.nanmin(mins)
       if abs(Z2[i,2]-gmin) > max(abs(Z2[i,2]),abs(gmin))*rtol and \
             abs(Z2[i,2]-gmin)>abstol:
           raise AssertionError('Not the global minimum in step {2}: {0}, {1}'.format(Z2[i,2], gmin,i), squareform(D))
-      i1, i2 = np.take(row_repr, I[i,:])
+      i1, i2 = row_repr[I[i,:]]
       if (i1<0):
         raise AssertionError('Negative index i1.', squareform(D))
       if (i2<0):
@@ -121,10 +126,10 @@ def test(Z2, method, D):
 
       s1 = size[i1]
       s2 = size[i2]
-      S = s1+s2
+      S = float(s1+s2)
       if method=='single':
           if i1>0: # mostly unnecessary; workaround for a bug/feature in NumPy 1.7.0.dev
-          # see http://projects.scipy.org/numpy/ticket/2078 
+          # see http://projects.scipy.org/numpy/ticket/2078
               Ds[:i1,i2]   = np.min( Ds[:i1,(i1,i2)],axis=1)
           Ds[i1:i2,i2] = np.minimum(Ds[i1,i1:i2],Ds[i1:i2,i2])
           Ds[i2,i2:]   = np.min( Ds[(i1,i2),i2:],axis=0)
@@ -140,7 +145,7 @@ def test(Z2, method, D):
       elif method=='weighted':
           if i1>0:
               Ds[:i1,i2]   = np.mean( Ds[:i1,(i1,i2)],axis=1)
-          Ds[i1:i2,i2] = ( Ds[i1,i1:i2] + Ds[i1:i2,i2] ) / 2
+          Ds[i1:i2,i2] = ( Ds[i1,i1:i2] + Ds[i1:i2,i2] )*.5
           Ds[i2,i2:]   = np.mean( Ds[(i1,i2),i2:],axis=0)
       elif method=='ward':
           Ds[:i1,i2]   = np.sqrt((np.square(Ds[:i1,i1])*(s1+size[:i1])
@@ -154,18 +159,18 @@ def test(Z2, method, D):
                          +np.square(Ds[i2,i2:])*(s2+size[i2:]))/(S+size[i2:]))
       elif method=='centroid':
           Ds[:i1,i2]   = np.sqrt((np.square(Ds[:i1,i1])*s1
-                         +np.square(Ds[:i1,i2])*s2)*S-gmin*gmin*s1*s2)/S
+                         +np.square(Ds[:i1,i2])*s2)*S-gmin*gmin*s1*s2) / S
           Ds[i1:i2,i2] = np.sqrt((np.square(Ds[i1,i1:i2])*s1
-                         +np.square(Ds[i1:i2,i2])*s2)*S-gmin*gmin*s1*s2)/S
+                         +np.square(Ds[i1:i2,i2])*s2)*S-gmin*gmin*s1*s2) / S
           Ds[i2,i2:]   = np.sqrt((np.square(Ds[i1,i2:])*s1
-                         +np.square(Ds[i2,i2:])*s2)*S-gmin*gmin*s1*s2)/S
+                         +np.square(Ds[i2,i2:])*s2)*S-gmin*gmin*s1*s2) / S
       elif method=='median':
           Ds[:i1,i2]   = np.sqrt((np.square(Ds[:i1,i1])+np.square(Ds[:i1,i2]))*2
-                         -gmin*gmin)/2
+                         -gmin*gmin)*.5
           Ds[i1:i2,i2] = np.sqrt((np.square(Ds[i1,i1:i2])+np.square(Ds[i1:i2,i2]))*2
-                         -gmin*gmin)/2
+                         -gmin*gmin)*.5
           Ds[i2,i2:]   = np.sqrt((np.square(Ds[i1,i2:])+np.square(Ds[i2,i2:]))*2
-                         -gmin*gmin)/2
+                         -gmin*gmin)*.5
       else:
           raise ValueError('Unknown method.')
 
@@ -173,18 +178,18 @@ def test(Z2, method, D):
       Ds[:i1, i1] = np.inf
       row_repr[n+i] = i2
       size[i2] = S
-    print "OK."
+    print('OK.')
 
 while True:
   dim = np.random.random_integers(2,12)
   n = np.random.random_integers(max(2*dim,5),200)
 
-  print 'Dimension: {0}'.format(dim)
-  print 'Number of points: {0}'.format(n)
+  print('Dimension: {0}'.format(dim))
+  print('Number of points: {0}'.format(n))
 
   try:
     test_all(n,dim)
   except AssertionError as E:
-    print E[0]
-    print E[1]
+    print(E[0])
+    print(E[1])
     sys.exit()

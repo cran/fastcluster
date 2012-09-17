@@ -44,6 +44,8 @@
 % Optimize the PDF targets and make the PDF file smaller
 \ifpdf\RequirePackage{hypdestopt}\fi
 
+\renewcommand*\sectionautorefname{Section}
+
 \usepackage{typearea}
 
 \DeclareMathOperator\size{size}
@@ -59,6 +61,7 @@
 \newcommand*\plot{\href{http://stat.ethz.ch/R-manual/R-patched/library/graphics/html/plot.html}{\texttt{plot}}}
 \newcommand*\identify{\href{http://stat.ethz.ch/R-manual/R-patched/library/stats/html/identify.hclust.html}{\texttt{identify}}}
 \newcommand*\rect{\href{http://stat.ethz.ch/R-manual/R-patched/library/stats/html/rect.hclust.html}{\texttt{rect.hclust}}}
+\newcommand*\NA{\href{http://stat.ethz.ch/R-manual/R-devel/library/base/html/NA.html}{\texttt{NA}}}
 
 %\usepackage{showframe}
 
@@ -85,8 +88,8 @@
 %\VignetteIndexEntry{User's manual}
 \title{The \textit{fastcluster} package: User's manual}
 \author{\href{http://math.stanford.edu/~muellner}{Daniel Müllner}}
-\date{March 12, 2012}
-\subtitle{Version 1.1.6}
+\date{September 17, 2012}
+\subtitle{Version 1.1.7}
 \maketitle
 
 \makeatletter
@@ -483,7 +486,7 @@ For single linkage clustering, any dissimilarity function may be chosen. Basical
 
 Therefore, the available metrics with their definitions are listed below as a reference. The symbols $u$ and $v$ mostly denote vectors in $\mathbb R^D$ with coordinates $u_j$ and $v_j$ respectively. See below for additional metrics for Boolean vectors. Unless otherwise stated, the input array $X$ is converted to a floating point array (\texttt{X.dtype==numpy.double}) if it does has have already the required data type. Some metrics accept Boolean input; in this case this is stated explicitly below.
 
-The distance formulas combined with the clustering in the \texttt{linkage\_vector} method do not have specified behavior if the data $X$ contains infinite or NaN values. Also, the masks in NumPy's  \href{http://docs.scipy.org/doc/numpy/reference/maskedarray.html}{masked arrays} are simply ignored.
+The distance formulas combined with the clustering in the \texttt{linkage\_vector} method do not have specified behavior if the data $X$ contains infinite or NaN values. Also, the masks in NumPy's \href{http://docs.scipy.org/doc/numpy/reference/maskedarray.html}{masked arrays} are simply ignored.
 
 \begin{description}
 \item[\normalfont\textit{\q euclidean\q}:] Euclidean metric, $L_2$ norm
@@ -638,7 +641,7 @@ For the \textit{\q average\q} and \textit{\q weighted\q} alias \textit{\q mcquit
 
 The code example in the R documentation (enter \texttt{?hclust} or \texttt{example(hclust)} in R) contains another instance where the squared distance matrix is generated from Euclidean data.
 
-\item The Python interface is not designed to deal with missing values, and NaN values in the vector data produce unspecified results. The \hyperref[hclust.vector]{\texttt{hclust.vector}} method in the R interface, in contrast, deals with NaN and the (R specific) NA values in the same way as the \dist{} method does. Confer the documentation for \dist{} for details.
+\item The Python interface is not designed to deal with missing values, and NaN values in the vector data produce unspecified results. The \hyperref[hclust.vector]{\texttt{hclust.vector}} method in the R interface, in contrast, deals with NaN and the (R specific) {\NA} values in the same way as the \dist{} method does. Confer the documentation for \dist{} for details.
 \end{itemize}
 
 \section{References}

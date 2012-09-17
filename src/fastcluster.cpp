@@ -4,23 +4,23 @@
   Copyright © 2011 Daniel Müllner
   <http://math.stanford.edu/~muellner>
 
-  This library implements various fast algorithms for hierarchical, agglomerative
-` clustering methods:
+  This library implements various fast algorithms for hierarchical,
+  agglomerative clustering methods:
 
   (1) Algorithms for the "stored matrix approach": the input is the array of
       pairwise dissimilarities.
 
-      MST_linkage_core: single linkage clustering with the "minimum spanning tree
-      algorithm (Rohlfs)
+      MST_linkage_core: single linkage clustering with the "minimum spanning
+      tree algorithm (Rohlfs)
 
       NN_chain_core: nearest-neighbor-chain algorithm, suitable for single,
       complete, average, weighted and Ward linkage (Murtagh)
 
-      generic_linkage: generic algorithm, suitable for all distance update formulas
-      (Müllner)
+      generic_linkage: generic algorithm, suitable for all distance update
+      formulas (Müllner)
 
-  (2) Algorithms for the "stored data approach": the input are points in a vector
-      space.
+  (2) Algorithms for the "stored data approach": the input are points in a
+      vector space.
 
       MST_linkage_core_vector: single linkage clustering for vector data
 

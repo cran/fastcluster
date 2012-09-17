@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__doc__ = '''Fast hierarchical clustering routines for R and Python
+__doc__ = """Fast hierarchical clustering routines for R and Python
 
 Copyright © 2011 Daniel Müllner
 <http://math.stanford.edu/~muellner>
@@ -16,15 +16,23 @@ saving algorithms.
 Refer to the User's manual "fastcluster.pdf" for comprehensive details. It
 is located in the directory inst/doc/ in the source distribution and may
 also be obtained at <http://math.stanford.edu/~muellner/fastcluster.html>.
-'''
+"""
 
 __all__ = ['single', 'complete', 'average', 'weighted', 'ward', 'centroid', 'median', 'linkage', 'linkage_vector']
-__version_info__ = ('1', '1', '6')
+__version_info__ = ('1', '1', '7')
 __version__ = '.'.join(__version_info__)
 
-from numpy import double, empty, array, ndarray, var, cov, dot, bool, expand_dims, ceil, sqrt
+from numpy import double, empty, array, ndarray, var, cov, dot, bool, \
+    expand_dims, ceil, sqrt
 from numpy.linalg import inv
-from scipy.spatial.distance import pdist
+try:
+    from scipy.spatial.distance import pdist
+except ImportError:
+    def pdist(*args, **kwargs):
+        raise ImportError('The fastcluster.linkage function cannot process '
+                          'vector data since the function '
+                          'scipy.partial.distance.pdist could not be  '
+                          'imported.')
 from _fastcluster import linkage_wrap, linkage_vector_wrap
 
 def single(D):
@@ -211,27 +219,23 @@ method='ward': d(K,L) = ( ((|I|+|L)d(I,L) + (|J|+|L|)d(J,L) − |L|d(I,J))
   where c_A again denotes the centroid of the points in cluster A.
 
 The output of the linkage method is unspecified and not assumed to make
-any sense if the input array X contains any infinite or NaN values, for
-all methods except single. The single linkage algorithm processes
-infinite values correctly. NaN values are interpreted as nonexisting
-links between nodes, ie. two clusters with NaN dissimilarity are chosen
-with even lower priority than those with +∞ distance in the search for
-the pairwise closest points in each step.
+any sense if the input array X contains any infinite or NaN values.
 
-Also, the linkage method does not treat NumPy's masked arrays as special
+The linkage method does not treat NumPy's masked arrays as special
 and simply ignores the mask.'''
     X = array(X, copy=False, subok=True)
     if X.ndim==1:
         if method=='single':
             preserve_input = False
         X = array(X, dtype=double, copy=preserve_input, order='C', subok=True)
-        NN = X.shape[0]
+        NN = len(X)
         N = int(ceil(sqrt(NN*2)))
-        if (N*(N-1)/2) != NN:
-            raise ValueError('The length of the condensed distance matrix must be (k \choose 2) for k data points!')
+        if (N*(N-1)//2) != NN:
+            raise ValueError('The length of the condensed distance matrix '
+                             'must be (k \choose 2) for k data points!')
     else:
         assert X.ndim==2
-        N = X.shape[0]
+        N = len(X)
         X = pdist(X, metric)
         X = array(X, dtype=double, copy=False, order='C', subok=True)
     Z = empty((N-1,4))
@@ -262,7 +266,8 @@ mtridx = {'euclidean'      :  0,
           'USER'           : 19,
           }
 
-booleanmetrics = ('yule', 'matching', 'dice', 'kulsinski', 'rogerstanimoto', 'sokalmichener', 'russellrao', 'sokalsneath', 'kulsinski')
+booleanmetrics = ('yule', 'matching', 'dice', 'kulsinski', 'rogerstanimoto',
+                  'sokalmichener', 'russellrao', 'sokalsneath', 'kulsinski')
 
 def linkage_vector(X, method='single', metric='euclidean', extraarg=None):
     '''Hierarchical (agglomerative) clustering on Euclidean data.
@@ -452,7 +457,7 @@ metric='sokalmichener' is an alias for 'matching'.'''
         assert metric=='euclidean'
         X = array(X, dtype=double, copy=(method=='ward'), order='C', subok=True)
     assert X.ndim==2
-    N = X.shape[0]
+    N = len(X)
     Z = empty((N-1,4))
 
     if metric=='seuclidean':

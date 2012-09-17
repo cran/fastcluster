@@ -94,3 +94,7 @@ Version 1.1.6, 03/12/2012
 
   • Small compatibility changes in the Python test scripts (again thanks to
     Massimo Di Stefano for the report).
+
+Version 1.1.7, 09/17/2012
+
+  • Scipy import is now optional (suggested by Forest Gregg)

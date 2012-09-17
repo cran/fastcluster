@@ -1,8 +1,8 @@
 Package: fastcluster
 Encoding: UTF-8
 Type: Package
-Version: 1.1.6
-Date: 2012-03-12
+Version: 1.1.7
+Date: 2012-09-17
 Title: Fast hierarchical clustering routines for R and Python
 Authors@R: person("Daniel", "Müllner", email =
         "fastcluster@math.stanford.edu", role = c("aut", "cph", "cre"))
@@ -24,6 +24,6 @@ Description: This is a two-in-one package which provides interfaces to
 License: GPL-3
 URL: http://math.stanford.edu/~muellner/fastcluster.html
 BuildVignettes: False
-Packaged: 2012-03-13 01:45:15 UTC; muellner
+Packaged: 2012-09-20 19:44:18 UTC; muellner
 Repository: CRAN
-Date/Publication: 2012-03-13 06:44:38
+Date/Publication: 2012-09-21 05:32:32

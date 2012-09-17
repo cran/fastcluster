@@ -7,11 +7,11 @@
 
 // for INT32_MAX in fastcluster.cpp
 // This must be defined here since Python.h loads the header file pyport.h,
-//  and from this stdint.h. INT32_MAX is defined in stdint.h, but only if
+// and from this stdint.h. INT32_MAX is defined in stdint.h, but only if
 // __STDC_LIMIT_MACROS is defined.
 #define __STDC_LIMIT_MACROS
 
-#define NPY_NO_DEPRECATED_API
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include <Python.h>
 #include <numpy/arrayobject.h>
