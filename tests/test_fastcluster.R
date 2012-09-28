@@ -206,7 +206,7 @@ test.vector.binary <- function() {
 }
 
 
-N = 25
+N = 15
 for (i in (1:N)) {
   if (i%%2==1) {
     cat(sprintf('Random test %d of %d (uniform distribution of distances):\n',i,2*N))

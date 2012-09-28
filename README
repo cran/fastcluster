@@ -20,8 +20,8 @@ information, in particular a performance comparison with other clustering
 packages. The User's manual is the file inst/doc/fastcluster.pdf in the
 source distribution.
 
-The fastcluster package is licensed under the GNU General Public License (GPL)
-Version 3. See <http://www.gnu.org/licenses/gpl.html>
+The fastcluster package is distributed under the BSD license. See the file LICENSE in the source distribution or
+<http://opensource.org/licenses/BSD-2-Clause>
 
 
 Installation

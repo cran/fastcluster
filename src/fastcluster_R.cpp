@@ -8,6 +8,11 @@
 #include <R_ext/Rdynload.h>
 #include <Rmath.h> // for R_pow
 
+#define fc_isnan(X) ((X)!=(X))
+// There is ISNAN but it is so much slower on my x86_64 system with GCC!
+
+#include <limits> // for std::numeric_limits<...>::infinity()
+
 #include "fastcluster.cpp"
 
 /*
@@ -25,8 +30,8 @@ struct node_pos {
 void order_nodes(const int N, const int * const merge, const t_index * const node_size, int * const order) {
   /* Parameters:
      N         : number of data points
-     merge     : (N-1)×2 array which specifies the node indices which are merged
-                 in each step of the clustering procedure.
+     merge     : (N-1)×2 array which specifies the node indices which are
+                 merged in each step of the clustering procedure.
                  Negative entries -1...-N point to singleton nodes, while
                  positive entries 1...(N-1) point to nodes which are themselves
                  parents of other nodes.
@@ -46,7 +51,7 @@ void order_nodes(const int N, const int * const merge, const t_index * const nod
   t_index idx = 1;
 
   do {
-    idx--;
+    --idx;
     parent = queue[idx].node;
     pos = queue[idx].pos;
 
@@ -54,13 +59,13 @@ void order_nodes(const int N, const int * const merge, const t_index * const nod
     child = merge[parent];
     if (child<0) { // singleton node, write this into the 'order' array.
       order[pos] = -child;
-      pos++;
+      ++pos;
     }
     else { /* compound node: put it on top of the queue and decompose it
               in a later iteration. */
       queue[idx].node = child-1; // convert index-1 based to index-0 based
       queue[idx].pos = pos;
-      idx++;
+      ++idx;
       pos += node_size[child-1];
     }
     // Second child
@@ -71,14 +76,14 @@ void order_nodes(const int N, const int * const merge, const t_index * const nod
     else {
       queue[idx].node = child-1;
       queue[idx].pos = pos;
-      idx++;
+      ++idx;
     }
   } while (idx>0);
 }
 
 #define size_(r_) ( ((r_<N) ? 1 : node_size[r_-N]) )
 
-template <bool sorted>
+template <const bool sorted>
 void generate_R_dendrogram(int * const merge, double * const height, int * const order, cluster_result & Z2, const int N) {
   // The array "nodes" is a union-find data structure for the cluster
   // identites (only needed for unsorted cluster_result input).
@@ -91,7 +96,7 @@ void generate_R_dendrogram(int * const merge, double * const height, int * const
   t_index node1, node2;
   auto_array_ptr<t_index> node_size(N-1);
 
-  for (t_index i=0; i<N-1; i++) {
+  for (t_index i=0; i<N-1; ++i) {
     // Get two data points whose clusters are merged in step i.
     // Find the cluster identifiers for these points.
     if (sorted) {
@@ -175,7 +180,7 @@ public:
     case METHOD_VECTOR_SINGLE:
       switch (metric) {
       case METRIC_R_EUCLIDEAN:
-        distfn = &R_dissimilarity::sqeuclidean;
+        distfn = &R_dissimilarity::sqeuclidean<false>;
         postprocessfn = &cluster_result::sqrt;
         break;
       case METRIC_R_MAXIMUM:
@@ -209,7 +214,7 @@ public:
 
     if (make_row_repr) {
       row_repr.init(2*N-1);
-      for (t_index i=0; i<N; i++) {
+      for (t_index i=0; i<N; ++i) {
         row_repr[i] = i;
       }
     }
@@ -236,7 +241,7 @@ public:
   }
 
   void merge_inplace(const t_index i, const t_index j) const {
-    for(t_index k=0; k<dim; k++) {
+    for(t_index k=0; k<dim; ++k) {
       *(Xptr(j,k)) = (X(i,k)*members[i] + X(j,k)*members[j]) /
         (members[i]+members[j]);
     }
@@ -245,13 +250,13 @@ public:
 
   void merge_weighted(const t_index i, const t_index j, const t_index newnode) const {
     merge_inplace_weighted(row_repr[i], row_repr[j]);
-    row_repr[newnode] =row_repr[j];
+    row_repr[newnode] = row_repr[j];
   }
 
   void merge_inplace_weighted(const t_index i, const t_index j) const {
     t_float * const Pi = Xa+i*dim;
     t_float * const Pj = Xa+j*dim;
-    for(t_index k=0; k<dim; k++) {
+    for(t_index k=0; k<dim; ++k) {
       Pj[k] = (Pi[k]+Pj[k])*.5;
     }
   }
@@ -263,7 +268,8 @@ public:
   }
 
   double ward(t_index const i1, t_index const i2) const {
-    return sqeuclidean(i1,i2)*members[i1]*members[i2]/(members[i1]+members[i2]);
+    return sqeuclidean<true>(i1,i2)*members[i1]*members[i2]/    \
+      (members[i1]+members[i2]);
   }
 
   inline double ward_initial(t_index const i1, t_index const i2) const {
@@ -272,6 +278,7 @@ public:
     return ward(i1,i2);
   }
 
+  // This method must not produce NaN if the input is non-NaN.
   inline static t_float ward_initial_conversion(const t_float min) {
     // identity
     return min;
@@ -310,7 +317,12 @@ public:
   #define both_non_NA(a,b) (!ISNAN(a) && !ISNAN(b))
   #endif
 
+  /* We need two variants of the Euclidean metric: one that does not check
+     for a NaN result, which is used for the initial distances, and one which
+     does, for the updated distances during the clustering procedure.
+  */
   // still public
+  template <const bool check_NaN>
   double sqeuclidean(t_index const i1, t_index const i2) const {
     double dev, dist;
     int count, j;
@@ -319,26 +331,30 @@ public:
     dist = 0;
     double * p1 = x+i1*nc;
     double * p2 = x+i2*nc;
-    for(j = 0 ; j < nc ; j++) {
+    for(j = 0 ; j < nc ; ++j) {
       if(both_non_NA(*p1, *p2)) {
         dev = (*p1 - *p2);
         if(!ISNAN(dev)) {
           dist += dev * dev;
-          count++;
+          ++count;
         }
       }
-      p1++;
-      p2++;
+      ++p1;
+      ++p2;
     }
     if(count == 0) return NA_REAL;
     if(count != nc) dist /= (static_cast<double>(count)/static_cast<double>(nc));
     //return sqrt(dist);
     // we take the square root later
+    if (check_NaN) {
+      if (fc_isnan(dist))
+        throw(nan_error());
+    }
     return dist;
   }
 
   inline double sqeuclidean_extended(t_index const i1, t_index const i2) const {
-    return sqeuclidean(row_repr[i1], row_repr[i2]);
+    return sqeuclidean<true>(row_repr[i1], row_repr[i2]);
   }
 
 private:
@@ -350,17 +366,17 @@ private:
     dist = -DBL_MAX;
     double * p1 = x+i1*nc;
     double * p2 = x+i2*nc;
-    for(j = 0 ; j < nc ; j++) {
+    for(j = 0 ; j < nc ; ++j) {
       if(both_non_NA(*p1, *p2)) {
         dev = fabs(*p1 - *p2);
         if(!ISNAN(dev)) {
           if(dev > dist)
             dist = dev;
-          count++;
+          ++count;
         }
       }
-      p1++;
-      p2++;
+      ++p1;
+      ++p2;
     }
     if(count == 0) return NA_REAL;
     return dist;
@@ -374,16 +390,16 @@ private:
     dist = 0;
     double * p1 = x+i1*nc;
     double * p2 = x+i2*nc;
-    for(j = 0 ; j < nc ; j++) {
+    for(j = 0 ; j < nc ; ++j) {
       if(both_non_NA(*p1, *p2)) {
         dev = fabs(*p1 - *p2);
         if(!ISNAN(dev)) {
           dist += dev;
-          count++;
+          ++count;
         }
       }
-      p1++;
-      p2++;
+      ++p1;
+      ++p2;
     }
     if(count == 0) return NA_REAL;
     if(count != nc) dist /= (static_cast<double>(count)/static_cast<double>(nc));
@@ -398,7 +414,7 @@ private:
     dist = 0;
     double * p1 = x+i1*nc;
     double * p2 = x+i2*nc;
-    for(j = 0 ; j < nc ; j++) {
+    for(j = 0 ; j < nc ; ++j) {
       if(both_non_NA(*p1, *p2)) {
         sum = fabs(*p1 + *p2);
         diff = fabs(*p1 - *p2);
@@ -408,12 +424,12 @@ private:
              (!R_FINITE(diff) && diff == sum &&
               /* use Inf = lim x -> oo */ (dev = 1.))) {
             dist += dev;
-            count++;
+            ++count;
           }
         }
       }
-      p1++;
-      p2++;
+      ++p1;
+      ++p2;
     }
     if(count == 0) return NA_REAL;
     if(count != nc) dist /= (static_cast<double>(count)/static_cast<double>(nc));
@@ -429,23 +445,23 @@ private:
     dist = 0;
     double * p1 = x+i1*nc;
     double * p2 = x+i2*nc;
-    for(j = 0 ; j < nc ; j++) {
+    for(j = 0 ; j < nc ; ++j) {
       if(both_non_NA(*p1, *p2)) {
         if(!both_FINITE(*p1, *p2)) {
           //          warning(_("treating non-finite values as NA"));
         }
         else {
           if(*p1 || *p2) {
-            count++;
+            ++count;
             if( ! (*p1 && *p2) ) {
-              dist++;
+              ++dist;
             }
           }
-          total++;
+          ++total;
         }
       }
-      p1++;
-      p2++;
+      ++p1;
+      ++p2;
     }
 
     if(total == 0) return NA_REAL;
@@ -461,16 +477,16 @@ private:
     dist = 0;
     double * p1 = x+i1*nc;
     double * p2 = x+i2*nc;
-    for(j = 0 ; j < nc ; j++) {
+    for(j = 0 ; j < nc ; ++j) {
       if(both_non_NA(*p1, *p2)) {
         dev = (*p1 - *p2);
         if(!ISNAN(dev)) {
           dist += R_pow(fabs(dev), p);
-          count++;
+          ++count;
         }
       }
-      p1++;
-      p2++;
+      ++p1;
+      ++p2;
     }
     if(count == 0) return NA_REAL;
     if(count != nc) dist /= (static_cast<double>(count)/static_cast<double>(nc));
@@ -516,14 +532,14 @@ extern "C" {
           method==METHOD_METR_CENTROID) {
         members.init(N);
         if (Rf_isNull(members_)) {
-          for (t_index i=0; i<N; i++) members[i] = 1;
+          for (t_index i=0; i<N; ++i) members[i] = 1;
         }
         else {
           PROTECT(members_ = AS_NUMERIC(members_));
           if (LENGTH(members_)!=N)
             Rf_error("'members' must have length N.");
           const t_float * const m = NUMERIC_POINTER(members_);
-          for (t_index i=0; i<N; i++) members[i] = m[i];
+          for (t_index i=0; i<N; ++i) members[i] = m[i];
           UNPROTECT(1); // members
         }
       }
@@ -538,7 +554,7 @@ extern "C" {
       auto_array_ptr<double> D__;
       if (method!=METHOD_METR_SINGLE) {
         D__.init(NN);
-        for (std::ptrdiff_t i=0; i<NN; i++)
+        for (std::ptrdiff_t i=0; i<NN; ++i)
           D__[i] = D[i];
       }
       UNPROTECT(1); // D_
@@ -618,6 +634,14 @@ extern "C" {
     catch(std::exception& e){
       Rf_error( e.what() );
     }
+    catch(const nan_error&){
+      Rf_error("NaN dissimilarity value.");
+    }
+    #ifdef FE_INVALID
+    catch(const fenv_error&){
+      Rf_error( "NaN dissimilarity value in intermediate results.");
+    }
+    #endif
     catch(...){
       Rf_error( "C++ exception (unknown reason)." );
     }
@@ -676,8 +700,8 @@ extern "C" {
       // to C-contiguous style
       // (Waste of memory for 'single'; the other methods need a copy
       auto_array_ptr<double> X(LENGTH(X_));
-      for (std::ptrdiff_t i=0; i<N; i++)
-        for (std::ptrdiff_t j=0; j<dim; j++)
+      for (std::ptrdiff_t i=0; i<N; ++i)
+        for (std::ptrdiff_t j=0; j<dim; ++j)
           X[i*dim+j] = X__[i+j*N];
 
       UNPROTECT(2); // dims_, X_
@@ -688,14 +712,14 @@ extern "C" {
           method==METHOD_VECTOR_CENTROID) {
         members.init(N);
         if (Rf_isNull(members_)) {
-          for (t_index i=0; i<N; i++) members[i] = 1;
+          for (t_index i=0; i<N; ++i) members[i] = 1;
         }
         else {
           PROTECT(members_ = AS_NUMERIC(members_));
           if (LENGTH(members_)!=N)
             Rf_error("The length of 'members' must be the same as the number of data points.");
           const t_float * const m = NUMERIC_POINTER(members_);
-          for (t_index i=0; i<N; i++) members[i] = m[i];
+          for (t_index i=0; i<N; ++i) members[i] = m[i];
           UNPROTECT(1); // members
         }
       }
@@ -800,6 +824,9 @@ extern "C" {
     }
     catch(std::exception& e){
       Rf_error( e.what() );
+    }
+    catch(const nan_error&){
+      Rf_error("NaN dissimilarity value.");
     }
     catch(...){
       Rf_error( "C++ exception (unknown reason)." );

@@ -19,7 +19,7 @@ also be obtained at <http://math.stanford.edu/~muellner/fastcluster.html>.
 """
 
 __all__ = ['single', 'complete', 'average', 'weighted', 'ward', 'centroid', 'median', 'linkage', 'linkage_vector']
-__version_info__ = ('1', '1', '7')
+__version_info__ = ('1', '1', '8')
 __version__ = '.'.join(__version_info__)
 
 from numpy import double, empty, array, ndarray, var, cov, dot, bool, \
@@ -218,8 +218,10 @@ method='ward': d(K,L) = ( ((|I|+|L)d(I,L) + (|J|+|L|)d(J,L) − |L|d(I,J))
 
   where c_A again denotes the centroid of the points in cluster A.
 
-The output of the linkage method is unspecified and not assumed to make
-any sense if the input array X contains any infinite or NaN values.
+The clustering algorithm handles infinite values correctly, as long as the
+chosen distance update formula makes sense. If a NaN value occurs, either
+in the original dissimilarities or as an updated dissimilarity, an error is
+raised.
 
 The linkage method does not treat NumPy's masked arrays as special
 and simply ignores the mask.'''
@@ -298,6 +300,12 @@ for Boolean vectors. Unless otherwise stated, the input array X is
 converted to a floating point array (X.dtype==numpy.double) if it does
 not have already the required data type. Some metrics accept Boolean
 input; in this case this is stated explicitly below.
+
+If a NaN value occurs, either in the original dissimilarities or as an
+updated dissimilarity, an error is raised. In principle, the clustering
+algorithm handles infinite values correctly, but the user is advised to
+carefully check the behavior of the metric and distance update formulas
+under these circumstances.
 
 The distance formulas combined with the clustering in the
 'linkage_vector' method do not have specified behavior if the data X

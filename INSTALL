@@ -54,7 +54,7 @@ contents of the archive with:
     tar -xvf fastcluster_(version).tar.gz
 
 Alternatively, use your favorite archive manager for unpacking, eg. on
-Windows. This will generate a new directory “fastcluster”. Switch to its 
+Windows. This will generate a new directory “fastcluster”. Switch to its
 “python” subdirectory:
 
     cd fastcluster/python/
@@ -70,4 +70,6 @@ home directory. For example, the line
 
 installs the package in the path lib/python/ under your home directory. See the
 chapter “Installing Python modules” in the Python documentation for further
-help.
+help:
+
+    http://docs.python.org/install/index.html

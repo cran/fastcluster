@@ -30,23 +30,23 @@
       generic_linkage_vector_alternative: alternative scheme for updating the
       nearest neighbors. This method seems faster than "generic_linkage_vector"
       for the centroid and median methods but slower for the Ward method.
+
+  All these implementation treat infinity values correctly. They throw an
+  exception if a NaN distance value occurs.
 */
 
-//#define __STDC_LIMIT_MACROS
-//#include <stdint.h>
+#include <algorithm>
 
-#include <limits> // for infinity()
+#include <fenv.h>
 
-#include <float.h>
+#include <cfloat> // also for DBL_MAX, DBL_MIN
 #ifndef DBL_MANT_DIG
 #error The constant DBL_MANT_DIG could not be defined.
 #endif
-
-//#include <cmath>
-#include <algorithm>
+#define T_FLOAT_MANT_DIG DBL_MANT_DIG
 
 #ifndef LONG_MAX
-#include <limits.h>
+#include <climits>
 #endif
 #ifndef LONG_MAX
 #error The constant LONG_MAX could not be defined.
@@ -73,7 +73,6 @@ typedef int_fast32_t t_index;
 #error The integer format "int" must not have a greater range than "t_index".
 #endif
 typedef double t_float;
-#define T_FLOAT_MANT_DIG DBL_MANT_DIG
 
 enum method_codes {
   // non-Euclidean methods
@@ -107,6 +106,8 @@ template <typename type>
 class auto_array_ptr{
 private:
   type * ptr;
+  auto_array_ptr(auto_array_ptr const &); // non construction-copyable
+  auto_array_ptr& operator=(auto_array_ptr const &); // non copyable
 public:
   auto_array_ptr() { ptr = NULL; }
   template <typename index>
@@ -126,7 +127,7 @@ public:
   template <typename index, typename value>
   void init(index const size, value const val) {
     init(size);
-    for (index i=0; i<size; i++) ptr[i] = val;
+    std::fill_n(ptr, size, val);
   }
   inline operator type *() const { return ptr; }
 };
@@ -142,8 +143,7 @@ struct node {
   */
 
   inline friend bool operator< (const node a, const node b) {
-    // Numbers are always smaller than NaNs.
-    return a.dist < b.dist || (a.dist==a.dist && b.dist!=b.dist);
+    return (a.dist < b.dist);
   }
 };
 
@@ -163,7 +163,7 @@ public:
     Z[pos].node1 = node1;
     Z[pos].node2 = node2;
     Z[pos].dist  = dist;
-    pos++;
+    ++pos;
   }
 
   node * operator[] (const t_index idx) const { return Z + idx; }
@@ -172,8 +172,8 @@ public:
      are monotone, so they do not change the sorted order of distances. */
 
   void sqrt() const {
-    for (t_index i=0; i<pos; i++) {
-      Z[i].dist = ::sqrt(Z[i].dist);
+    for (node * ZZ=Z; ZZ!=Z+pos; ++ZZ) {
+      ZZ->dist = ::sqrt(ZZ->dist);
     }
   }
 
@@ -182,8 +182,8 @@ public:
   }
 
   void sqrtdouble(const t_float) const { // ignore the argument
-    for (t_index i=0; i<pos; i++) {
-      Z[i].dist = ::sqrt(2*Z[i].dist);
+    for (node * ZZ=Z; ZZ!=Z+pos; ++ZZ) {
+      ZZ->dist = ::sqrt(2*ZZ->dist);
     }
   }
 
@@ -195,20 +195,20 @@ public:
 
   void power(const t_float p) const {
     t_float const q = 1/p;
-    for (t_index i=0; i<pos; i++) {
-      Z[i].dist = my_pow(Z[i].dist,q);
+    for (node * ZZ=Z; ZZ!=Z+pos; ++ZZ) {
+      ZZ->dist = my_pow(ZZ->dist,q);
     }
   }
 
   void plusone(const t_float) const { // ignore the argument
-    for (t_index i=0; i<pos; i++) {
-      Z[i].dist += 1;
+    for (node * ZZ=Z; ZZ!=Z+pos; ++ZZ) {
+      ZZ->dist += 1;
     }
   }
 
   void divide(const t_float denom) const {
-    for (t_index i=0; i<pos; i++) {
-      Z[i].dist /= denom;
+    for (node * ZZ=Z; ZZ!=Z+pos; ++ZZ) {
+      ZZ->dist /= denom;
     }
   }
 };
@@ -236,7 +236,7 @@ public:
     // Initialize to the given size.
     : succ(size+1), pred(size+1)
   {
-    for (t_index i=0; i<size; i++) {
+    for (t_index i=0; i<size; ++i) {
       pred[i+1] = i;
       succ[i] = i+1;
     }
@@ -289,10 +289,10 @@ public:
   }
 
   t_index Find (t_index idx) const {
-    if (parent[idx] !=0 ) { // a → b
+    if (parent[idx] != 0 ) { // a → b
       t_index p = idx;
       idx = parent[idx];
-      if (parent[idx] !=0 ) { // a → b → c
+      if (parent[idx] != 0 ) { // a → b → c
         do {
           idx = parent[idx];
         } while (parent[idx] != 0);
@@ -311,6 +311,11 @@ public:
   }
 };
 
+class nan_error{};
+#ifdef FE_INVALID
+class fenv_error{};
+#endif
+
 static void MST_linkage_core(const t_index N, const t_float * const D,
                              cluster_result & Z2) {
 /*
@@ -322,13 +327,6 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
 
     F. James Rohlf, Hierarchical clustering using the minimum spanning tree,
     The Computer Journal, vol. 16, 1973, p. 93–95.
-
-    This implementation should handle Inf values correctly (designed to
-    do so but not tested).
-
-    This implementation avoids NaN if possible. It treats NaN as if it was
-    greater than +Infinity, ie. whenever we find a non-NaN value, this is
-    preferred in all the minimum-distance searches.
 */
   t_index i;
   t_index idx2;
@@ -340,45 +338,41 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
 
   // first iteration
   idx2 = 1;
-  min = d[1] = D[0];
-  for (i=2; min!=min && i<N; i++) {  // eliminate NaNs if possible
-    min = d[i] = D[i-1];
-    idx2 = i;
-  }
-  for ( ; i<N; i++) {
+  min = std::numeric_limits<t_float>::infinity();
+  for (i=1; i<N; ++i) {
     d[i] = D[i-1];
     if (d[i] < min) {
       min = d[i];
       idx2 = i;
     }
+    else if (fc_isnan(d[i]))
+      throw (nan_error());
   }
   Z2.append(0, idx2, min);
 
-  for (t_index j=1; j<N-1; j++) {
+  for (t_index j=1; j<N-1; ++j) {
     prev_node = idx2;
     active_nodes.remove(prev_node);
 
     idx2 = active_nodes.succ[0];
     min = d[idx2];
-    for (i=idx2; min!=min && i<prev_node; i=active_nodes.succ[i]) {
-      min = d[i] = D_(i, prev_node);
-      idx2 = i;
-    }
-    for ( ; i<prev_node; i=active_nodes.succ[i]) {
-      if (d[i] > D_(i, prev_node))
-        d[i] = D_(i, prev_node);
+    for (i=idx2; i<prev_node; i=active_nodes.succ[i]) {
+      t_float tmp = D_(i, prev_node);
+      if (tmp < d[i])
+        d[i] = tmp;
+      else if (fc_isnan(tmp))
+        throw (nan_error());
       if (d[i] < min) {
         min = d[i];
         idx2 = i;
       }
     }
-    for (; min!=min && i<N; i=active_nodes.succ[i]) {
-      min = d[i] = D_(prev_node, i);
-      idx2 = i;
-    }
     for (; i<N; i=active_nodes.succ[i]) {
-      if (d[i] > D_(prev_node, i))
-        d[i] = D_(prev_node, i);
+      t_float tmp = D_(prev_node, i);
+      if (d[i] > tmp)
+        d[i] = tmp;
+      else if (fc_isnan(tmp))
+        throw (nan_error());
       if (d[i] < min) {
         min = d[i];
         idx2 = i;
@@ -398,19 +392,44 @@ inline static void f_complete( t_float * const b, const t_float a ) {
 }
 inline static void f_average( t_float * const b, const t_float a, const t_float s, const t_float t) {
   *b = s*a + t*(*b);
+  #ifndef FE_INVALID
+  if (fc_isnan(*b)) {
+    throw(nan_error());
+  }
+  #endif
 }
 inline static void f_weighted( t_float * const b, const t_float a) {
-  *b = (a+*b)/2;
+  *b = (a+*b)*.5;
+  #ifndef FE_INVALID
+  if (fc_isnan(*b)) {
+    throw(nan_error());
+  }
+  #endif
 }
 inline static void f_ward( t_float * const b, const t_float a, const t_float c, const t_float s, const t_float t, const t_float v) {
   *b = ( (v+s)*a - v*c + (v+t)*(*b) ) / (s+t+v);
   //*b = a+(*b)-(t*a+s*(*b)+v*c)/(s+t+v);
+  #ifndef FE_INVALID
+  if (fc_isnan(*b)) {
+    throw(nan_error());
+  }
+  #endif
 }
 inline static void f_centroid( t_float * const b, const t_float a, const t_float stc, const t_float s, const t_float t) {
-  *b = s*a + t*(*b) - stc;
+  *b = s*a - stc + t*(*b);
+  #ifndef FE_INVALID
+  if (fc_isnan(*b)) {
+    throw(nan_error());
+  }
+  #endif
 }
 inline static void f_median( t_float * const b, const t_float a, const t_float c_4) {
-  *b = (a+(*b))/2 - c_4;
+  *b = (a+(*b))*.5 - c_4;
+  #ifndef FE_INVALID
+  if (fc_isnan(*b)) {
+    throw(nan_error());
+  }
+  #endif
 }
 
 template <const unsigned char method, typename t_members>
@@ -422,11 +441,8 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
 
     This is the NN-chain algorithm, described on page 86 in the following book:
 
-﻿   Fionn Murtagh, Multidimensional Clustering Algorithms,
+    Fionn Murtagh, Multidimensional Clustering Algorithms,
     Vienna, Würzburg: Physica-Verlag, 1985.
-
-    This implementation does not give defined results when NaN or Inf values
-    are present in the array D.
 */
   t_index i;
 
@@ -440,7 +456,18 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
 
   t_float min;
 
-  for (t_index j=0; j<N-1; j++) {
+  for (t_float const * DD=D; DD!=D+(static_cast<std::ptrdiff_t>(N)*(N-1)>>1);
+       ++DD) {
+    if (fc_isnan(*DD)) {
+      throw(nan_error());
+    }
+  }
+
+  #ifdef FE_INVALID
+  if (feclearexcept(FE_INVALID)) throw fenv_error();
+  #endif
+
+  for (t_index j=0; j<N-1; ++j) {
     if (NN_chain_tip <= 3) {
       NN_chain[0] = idx1 = active_nodes.start;
       NN_chain_tip = 1;
@@ -595,13 +622,16 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
       break;
     }
   }
+  #ifdef FE_INVALID
+  if (fetestexcept(FE_INVALID)) throw fenv_error();
+  #endif
 }
 
 class binary_min_heap {
   /*
-  Class for a binary min-heap. The data resides in an array A. The elements of A
-  are not changed but two lists I and R of indices are generated which point to
-  elements of A and backwards.
+  Class for a binary min-heap. The data resides in an array A. The elements of
+  A are not changed but two lists I and R of indices are generated which point
+  to elements of A and backwards.
 
   The heap tree structure is
 
@@ -613,12 +643,11 @@ class binary_min_heap {
              \    /
               H[i]
 
-  where the children must be less or equal than their parent. Thus, H[0] contains
-  the minimum. The lists I and R are made such that H[i] = A[I[i]] and R[I[i]] = i.
+  where the children must be less or equal than their parent. Thus, H[0]
+  contains the minimum. The lists I and R are made such that H[i] = A[I[i]]
+  and R[I[i]] = i.
 
-  This implementation avoids NaN if possible. It treats NaN as if it was
-  greater than +Infinity, ie. whenever we find a non-NaN value, this is
-  preferred in all comparisons.
+  This implementation is not designed to handle NaN values.
   */
 private:
   t_float * A;
@@ -629,19 +658,20 @@ private:
 public:
   binary_min_heap(const t_index size)
     : I(size), R(size)
-  { // Allocate memory and initialize the lists I and R to the identity. This does
-    // not make it a heap. Call heapify afterwards!
+  { // Allocate memory and initialize the lists I and R to the identity. This
+    // does not make it a heap. Call heapify afterwards!
     this->size = size;
-    for (t_index i=0; i<size; i++)
+    for (t_index i=0; i<size; ++i)
       R[i] = I[i] = i;
   }
 
-  binary_min_heap(const t_index size1, const t_index size2, const t_index start)
+  binary_min_heap(const t_index size1, const t_index size2,
+                  const t_index start)
     : I(size1), R(size2)
-  { // Allocate memory and initialize the lists I and R to the identity. This does
-    // not make it a heap. Call heapify afterwards!
+  { // Allocate memory and initialize the lists I and R to the identity. This
+    // does not make it a heap. Call heapify afterwards!
     this->size = size1;
-    for (t_index i=0; i<size; i++) {
+    for (t_index i=0; i<size; ++i) {
       R[i+start] = i;
       I[i] = i + start;
     }
@@ -657,7 +687,7 @@ public:
     t_index idx;
     this->A = A;
     for (idx=(size>>1); idx>0; ) {
-      idx--;
+      --idx;
       update_geq_(idx);
     }
   }
@@ -669,7 +699,7 @@ public:
 
   void heap_pop() {
     // Remove the minimal element from the heap.
-    size--;
+    --size;
     I[0] = I[size];
     R[I[0]] = 0;
     update_geq_(0);
@@ -677,10 +707,10 @@ public:
 
   void remove(t_index idx) {
     // Remove an element from the heap.
-    size--;
+    --size;
     R[I[size]] = R[idx];
     I[R[idx]] = I[size];
-    if ( H(size)<=A[idx] || A[idx]!=A[idx] ) {
+    if ( H(size)<=A[idx] ) {
       update_leq_(R[idx]);
     }
     else {
@@ -688,19 +718,20 @@ public:
     }
   }
 
-  void replace ( const t_index idxold, const t_index idxnew, const t_float val) {
+  void replace ( const t_index idxold, const t_index idxnew,
+                 const t_float val) {
     R[idxnew] = R[idxold];
     I[R[idxnew]] = idxnew;
-    if (val<=A[idxold] || A[idxold]!=A[idxold]) // avoid NaN! ????????????????????
+    if (val<=A[idxold])
       update_leq(idxnew, val);
     else
       update_geq(idxnew, val);
   }
 
   void update ( const t_index idx, const t_float val ) const {
-    // Update the element A[i] with val and re-arrange the indices the preserve the
-    // heap condition.
-    if (val<=A[idx] || A[idx]!=A[idx]) // avoid NaN! ????????????????????
+    // Update the element A[i] with val and re-arrange the indices to preserve
+    // the heap condition.
+    if (val<=A[idx])
       update_leq(idx, val);
     else
       update_geq(idx, val);
@@ -721,19 +752,18 @@ public:
 private:
   void update_leq_ (t_index i) const {
     t_index j;
-    for ( ; (i>0) && ( H(i)<H(j=(i-1)>>1) || H(j)!=H(j) ); i=j)
-      // avoid NaN!
+    for ( ; (i>0) && ( H(i)<H(j=(i-1)>>1) ); i=j)
       heap_swap(i,j);
   }
 
   void update_geq_ (t_index i) const {
     t_index j;
     for ( ; (j=2*i+1)<size; i=j) {
-      if ( H(j)>=H(i) || H(j)!=H(j) ) {  // avoid Nan!
-        j++;
-        if ( j>=size || H(j)>=H(i) || H(j)!=H(j) ) break; // avoid NaN!
+      if ( H(j)>=H(i) ) {
+        ++j;
+        if ( j>=size || H(j)>=H(i) ) break;
       }
-      else if ( j+1<size && H(j+1)<H(j) ) j++;
+      else if ( j+1<size && H(j+1)<H(j) ) ++j;
       heap_swap(i, j);
     }
   }
@@ -759,9 +789,6 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
     N: integer, number of data points
     D: condensed distance matrix N*(N-1)/2
     Z2: output data structure
-
-    This implementation does not give defined results when NaN or Inf values
-    are present in the array D.
   */
 
   const t_index N_1 = N-1;
@@ -770,19 +797,19 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
 
   auto_array_ptr<t_index> n_nghbr(N_1); // array of nearest neighbors
   auto_array_ptr<t_float> mindist(N_1); // distances to the nearest neighbors
-  auto_array_ptr<t_index> row_repr(N); // row_repr[i]: node number that the i-th row
-                                       // represents
+  auto_array_ptr<t_index> row_repr(N); // row_repr[i]: node number that the
+                                       // i-th row represents
   doubly_linked_list active_nodes(N);
   binary_min_heap nn_distances(N_1); // minimum heap structure for the distance
                                      // to the nearest neighbor of each point
 
-  t_index node1, node2;     // node numbers in the output
-  t_float size1, size2;     // and their cardinalities
+  t_index node1, node2; // node numbers in the output
+  t_float size1, size2; // and their cardinalities
 
   t_float min; // minimum and row index for nearest-neighbor search
   t_index idx;
 
-  for (i=0; i<N; i++)
+  for (i=0; i<N; ++i)
     // Build a list of row ↔ node label assignments.
     // Initially i ↦ i
     row_repr[i] = i;
@@ -790,27 +817,31 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
   // Initialize the minimal distances:
   // Find the nearest neighbor of each point.
   // n_nghbr[i] = argmin_{j>i} D(i,j) for i in range(N-1)
-  t_float * DD = D;
-  for (i=0; i<N_1; i++) {
-    min = *(DD++);
-    idx = j = i+1;
-    while (j<N_1) {
-      j++;
+  t_float const * DD = D;
+  for (i=0; i<N_1; ++i) {
+    min = std::numeric_limits<t_float>::infinity();
+    for (idx=j=i+1; j<N; ++j, ++DD) {
       if (*DD<min) {
         min = *DD;
         idx = j;
       }
-      DD++;
+      else if (fc_isnan(*DD))
+        throw(nan_error());
     }
     mindist[i] = min;
     n_nghbr[i] = idx;
   }
-  // Put the minimal distances into a heap structure to make the repeated global
-  // minimum searches fast.
+
+  // Put the minimal distances into a heap structure to make the repeated
+  // global minimum searches fast.
   nn_distances.heapify(mindist);
 
+  #ifdef FE_INVALID
+  if (feclearexcept(FE_INVALID)) throw fenv_error();
+  #endif
+
   // Main loop: We have N-1 merging steps.
-  for (i=0; i<N_1; i++) {
+  for (i=0; i<N_1; ++i) {
     /*
       Here is a special feature that allows fast bookkeeping and updates of the
       minimal distances.
@@ -820,32 +851,33 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
 
           mindist[i] ≥ min_{j>i} D(i,j)
 
-      Normally, we have equality. However, this minimum may become invalid due to
-      the updates in the distance matrix. The rules are:
+      Normally, we have equality. However, this minimum may become invalid due
+      to the updates in the distance matrix. The rules are:
 
-      1) If mindist[i] is equal to D(i, n_nghbr[i]), this is the correct minimum
-         and n_nghbr[i] is a nearest neighbor.
+      1) If mindist[i] is equal to D(i, n_nghbr[i]), this is the correct
+         minimum and n_nghbr[i] is a nearest neighbor.
 
       2) If mindist[i] is smaller than D(i, n_nghbr[i]), this might not be the
          correct minimum. The minimum needs to be recomputed.
 
-      3) mindist[i] is never bigger than the true minimum. Hence, we never miss the
-         true minimum if we take the smallest mindist entry, re-compute the value if
-         necessary (thus maybe increasing it) and looking for the now smallest
-         mindist entry until a valid minimal entry is found. This step is done in the
-         lines below.
+      3) mindist[i] is never bigger than the true minimum. Hence, we never
+         miss the true minimum if we take the smallest mindist entry,
+         re-compute the value if necessary (thus maybe increasing it) and
+         looking for the now smallest mindist entry until a valid minimal
+         entry is found. This step is done in the lines below.
 
-      The update process for D below takes care that these rules are fulfilled. This
-      makes sure that the minima in the rows D(i,i+1:)of D are re-calculated when
-      necessary but re-calculation is avoided whenever possible.
+      The update process for D below takes care that these rules are
+      fulfilled. This makes sure that the minima in the rows D(i,i+1:)of D are
+      re-calculated when necessary but re-calculation is avoided whenever
+      possible.
 
-      The re-calculation of the minima makes the worst-case runtime of this algorithm
-      cubic in N. We avoid this whenever possible, and in most cases the runtime
-      appears to be quadratic.
+      The re-calculation of the minima makes the worst-case runtime of this
+      algorithm cubic in N. We avoid this whenever possible, and in most cases
+      the runtime appears to be quadratic.
     */
     idx1 = nn_distances.argmin();
     if (method != METHOD_METR_SINGLE) {
-      while ( D_(idx1, n_nghbr[idx1]) > mindist[idx1] ) {
+      while ( mindist[idx1] < D_(idx1, n_nghbr[idx1]) ) {
         // Recompute the minimum mindist[idx1] and n_nghbr[idx1].
         n_nghbr[idx1] = j = active_nodes.succ[idx1]; // exists, maximally N-1
         min = D_(idx1,j);
@@ -855,8 +887,8 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
             n_nghbr[idx1] = j;
           }
         }
-        /* Update the heap with the new true minimum and search for the (possibly
-           different) minimal entry. */
+        /* Update the heap with the new true minimum and search for the
+           (possibly different) minimal entry. */
         nn_distances.update_geq(idx1, min);
         idx1 = nn_distances.argmin();
       }
@@ -902,7 +934,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
         f_single(&D_(j, idx2), D_(idx1, j));
         // If the new value is below the old minimum in a row, update
         // the mindist and n_nghbr arrays.
-        if (D_(j, idx2)<mindist[j]) {
+        if (D_(j, idx2) < mindist[j]) {
           nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
@@ -959,7 +991,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       // Update the distance matrix in the range (idx1, idx2).
       for (; j<idx2; j=active_nodes.succ[j]) {
         f_average(&D_(j, idx2), D_(idx1, j), s, t);
-        if (D_(j, idx2)<mindist[j]) {
+        if (D_(j, idx2) < mindist[j]) {
           nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
@@ -971,7 +1003,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
         min = D_(idx2,j);
         for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           f_average(&D_(idx2, j), D_(idx1, j), s, t);
-          if (D_(idx2,j)<min) {
+          if (D_(idx2,j) < min) {
             min = D_(idx2,j);
             n_nghbr[idx2] = j;
           }
@@ -996,7 +1028,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       // Update the distance matrix in the range (idx1, idx2).
       for (; j<idx2; j=active_nodes.succ[j]) {
         f_weighted(&D_(j, idx2), D_(idx1, j) );
-        if (D_(j, idx2)<mindist[j]) {
+        if (D_(j, idx2) < mindist[j]) {
           nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
@@ -1008,7 +1040,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
         min = D_(idx2,j);
         for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           f_weighted(&D_(idx2, j), D_(idx1, j) );
-          if (D_(idx2,j)<min) {
+          if (D_(idx2,j) < min) {
             min = D_(idx2,j);
             n_nghbr[idx2] = j;
           }
@@ -1035,7 +1067,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       for (; j<idx2; j=active_nodes.succ[j]) {
         f_ward(&D_(j, idx2), D_(idx1, j), mindist[idx1], size1, size2,
                static_cast<t_float>(members[j]) );
-        if (D_(j, idx2)<mindist[j]) {
+        if (D_(j, idx2) < mindist[j]) {
           nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
@@ -1049,7 +1081,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
         for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           f_ward(&D_(idx2, j), D_(idx1, j), mindist[idx1],
                  size1, size2, static_cast<t_float>(members[j]) );
-          if (D_(idx2,j)<min) {
+          if (D_(idx2,j) < min) {
             min = D_(idx2,j);
             n_nghbr[idx2] = j;
           }
@@ -1071,7 +1103,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       t_float stc = s*t*mindist[idx1];
       for (j=active_nodes.start; j<idx1; j=active_nodes.succ[j]) {
         f_centroid(&D_(j, idx2), D_(j, idx1), stc, s, t);
-        if (D_(j, idx2)<mindist[j]) {
+        if (D_(j, idx2) < mindist[j]) {
           nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
@@ -1081,7 +1113,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       // Update the distance matrix in the range (idx1, idx2).
       for (; j<idx2; j=active_nodes.succ[j]) {
         f_centroid(&D_(j, idx2), D_(idx1, j), stc, s, t);
-        if (D_(j, idx2)<mindist[j]) {
+        if (D_(j, idx2) < mindist[j]) {
           nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
@@ -1093,7 +1125,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
         min = D_(idx2,j);
         for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           f_centroid(&D_(idx2, j), D_(idx1, j), stc, s, t);
-          if (D_(idx2,j)<min) {
+          if (D_(idx2,j) < min) {
             min = D_(idx2,j);
             n_nghbr[idx2] = j;
           }
@@ -1111,10 +1143,10 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
         but maybe smaller than min(d1,d2).
       */
       // Update the distance matrix in the range [start, idx1).
-      t_float c_4 = mindist[idx1]/4;
+      t_float c_4 = mindist[idx1]*.25;
       for (j=active_nodes.start; j<idx1; j=active_nodes.succ[j]) {
         f_median(&D_(j, idx2), D_(j, idx1), c_4 );
-        if (D_(j, idx2)<mindist[j]) {
+        if (D_(j, idx2) < mindist[j]) {
           nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
@@ -1124,7 +1156,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       // Update the distance matrix in the range (idx1, idx2).
       for (; j<idx2; j=active_nodes.succ[j]) {
         f_median(&D_(j, idx2), D_(idx1, j), c_4 );
-        if (D_(j, idx2)<mindist[j]) {
+        if (D_(j, idx2) < mindist[j]) {
           nn_distances.update_leq(j, D_(j, idx2));
           n_nghbr[j] = idx2;
         }
@@ -1136,7 +1168,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
         min = D_(idx2,j);
         for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           f_median(&D_(idx2, j), D_(idx1, j), c_4 );
-          if (D_(idx2,j)<min) {
+          if (D_(idx2,j) < min) {
             min = D_(idx2,j);
             n_nghbr[idx2] = j;
           }
@@ -1146,6 +1178,9 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       break;
     }
   }
+  #ifdef FE_INVALID
+  if (fetestexcept(FE_INVALID)) throw fenv_error();
+  #endif
 }
 
 /*
@@ -1165,13 +1200,6 @@ static void MST_linkage_core_vector(const t_index N,
 
     F. James Rohlf, Hierarchical clustering using the minimum spanning tree,
     The Computer Journal, vol. 16, 1973, p. 93–95.
-
-    This implementation should handle Inf values correctly (designed to
-    do so but not tested).
-
-    This implementation avoids NaN if possible. It treats NaN as if it was
-    greater than +Infinity, ie. whenever we find a non-NaN value, this is
-    preferred in all the minimum-distance searches.
 */
   t_index i;
   t_index idx2;
@@ -1183,38 +1211,32 @@ static void MST_linkage_core_vector(const t_index N,
 
   // first iteration
   idx2 = 1;
-  min = d[1] = dist(0,1);
-  for (i=2; min!=min && i<N; i++) { // eliminate NaNs if possible
-    min = d[i] = dist(0,i);
-    idx2 = i;
-  }
-
-  for ( ; i<N; i++) {
+  min = std::numeric_limits<t_float>::infinity();
+  for (i=1; i<N; ++i) {
     d[i] = dist(0,i);
     if (d[i] < min) {
       min = d[i];
       idx2 = i;
     }
+    else if (fc_isnan(d[i]))
+      throw (nan_error());
   }
 
   Z2.append(0, idx2, min);
 
-  for (t_index j=1; j<N-1; j++) {
+  for (t_index j=1; j<N-1; ++j) {
     prev_node = idx2;
     active_nodes.remove(prev_node);
 
     idx2 = active_nodes.succ[0];
     min = d[idx2];
 
-    for (i=idx2; min!=min && i<N; i=active_nodes.succ[i]) { // eliminate NaNs if possible
-      min = d[i] = dist(i, prev_node);
-      idx2 = i;
-    }
-
-    for ( ; i<N; i=active_nodes.succ[i]) {
+    for (i=idx2; i<N; i=active_nodes.succ[i]) {
       t_float tmp = dist(i, prev_node);
       if (d[i] > tmp)
         d[i] = tmp;
+      else if (fc_isnan(tmp))
+        throw (nan_error());
       if (d[i] < min) {
         min = d[i];
         idx2 = i;
@@ -1235,9 +1257,6 @@ static void generic_linkage_vector(const t_index N,
 
     This algorithm is valid for the distance update methods
     "Ward", "centroid" and "median" only!
-
-    This implementation does not give defined results when NaN or Inf values
-    are returned by the distance function.
   */
   const t_index N_1 = N-1;
   t_index i, j; // loop variables
@@ -1245,8 +1264,8 @@ static void generic_linkage_vector(const t_index N,
 
   auto_array_ptr<t_index> n_nghbr(N_1); // array of nearest neighbors
   auto_array_ptr<t_float> mindist(N_1); // distances to the nearest neighbors
-  auto_array_ptr<t_index> row_repr(N); // row_repr[i]: node number that the i-th
-                                       // row represents
+  auto_array_ptr<t_index> row_repr(N); // row_repr[i]: node number that the
+                                       // i-th row represents
   doubly_linked_list active_nodes(N);
   binary_min_heap nn_distances(N_1); // minimum heap structure for the distance
                                      // to the nearest neighbor of each point
@@ -1254,7 +1273,7 @@ static void generic_linkage_vector(const t_index N,
   t_index node1, node2;     // node numbers in the output
   t_float min; // minimum and row index for nearest-neighbor search
 
-  for (i=0; i<N; i++)
+  for (i=0; i<N; ++i)
     // Build a list of row ↔ node label assignments.
     // Initially i ↦ i
     row_repr[i] = i;
@@ -1262,33 +1281,17 @@ static void generic_linkage_vector(const t_index N,
   // Initialize the minimal distances:
   // Find the nearest neighbor of each point.
   // n_nghbr[i] = argmin_{j>i} D(i,j) for i in range(N-1)
-  for (i=0; i<N_1; i++) {
-    t_index idx = j = i+1;
-    switch (method) {
-    case METHOD_METR_WARD:
-      min = dist.ward_initial(i,j);
-      break;
-    default:
-      min = dist.sqeuclidean(i,j);
-    }
-    for(j++; min!=min && j<N; j++) { // eliminate NaN if possible
-      switch (method) {
-      case METHOD_METR_WARD:
-        min = dist.ward_initial(i,j);
-        break;
-      default:
-        min = dist.sqeuclidean(i,j);
-      }
-      idx = j;
-    }
-    for( ; j<N; j++) {
+  for (i=0; i<N_1; ++i) {
+    min = std::numeric_limits<t_float>::infinity();
+    t_index idx;
+    for (idx=j=i+1; j<N; ++j) {
       t_float tmp;
       switch (method) {
       case METHOD_METR_WARD:
         tmp = dist.ward_initial(i,j);
         break;
       default:
-        tmp = dist.sqeuclidean(i,j);
+        tmp = dist.template sqeuclidean<true>(i,j);
       }
       if (tmp<min) {
         min = tmp;
@@ -1305,12 +1308,12 @@ static void generic_linkage_vector(const t_index N,
     n_nghbr[i] = idx;
   }
 
-  // Put the minimal distances into a heap structure to make the repeated global
-  // minimum searches fast.
+  // Put the minimal distances into a heap structure to make the repeated
+  // global minimum searches fast.
   nn_distances.heapify(mindist);
 
   // Main loop: We have N-1 merging steps.
-  for (i=0; i<N_1; i++) {
+  for (i=0; i<N_1; ++i) {
     idx1 = nn_distances.argmin();
 
     while ( active_nodes.is_inactive(n_nghbr[idx1]) ) {
@@ -1328,9 +1331,9 @@ static void generic_linkage_vector(const t_index N,
         }
         break;
       default:
-        min = dist.sqeuclidean(idx1,j);
+        min = dist.template sqeuclidean<true>(idx1,j);
         for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
-          t_float const tmp = dist.sqeuclidean(idx1,j);
+          t_float const tmp = dist.template sqeuclidean<true>(idx1,j);
           if (tmp<min) {
             min = tmp;
             n_nghbr[idx1] = j;
@@ -1385,7 +1388,7 @@ static void generic_linkage_vector(const t_index N,
       // Update the distance matrix in the range (idx1, idx2).
       for ( ; j<idx2; j=active_nodes.succ[j]) {
         t_float const tmp = dist.ward(j, idx2);
-        if (tmp<mindist[j]) {
+        if (tmp < mindist[j]) {
           nn_distances.update_leq(j, tmp);
           n_nghbr[j] = idx2;
         }
@@ -1399,7 +1402,7 @@ static void generic_linkage_vector(const t_index N,
         min = dist.ward(idx2,j);
         for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           t_float const tmp = dist.ward(idx2,j);
-          if (tmp<min) {
+          if (tmp < min) {
             min = tmp;
             n_nghbr[idx2] = j;
           }
@@ -1416,8 +1419,8 @@ static void generic_linkage_vector(const t_index N,
         but maybe smaller than min(d1,d2).
       */
       for (j=active_nodes.start; j<idx2; j=active_nodes.succ[j]) {
-        t_float const tmp = dist.sqeuclidean(j, idx2);
-        if (tmp<mindist[j]) {
+        t_float const tmp = dist.template sqeuclidean<true>(j, idx2);
+        if (tmp < mindist[j]) {
           nn_distances.update_leq(j, tmp);
           n_nghbr[j] = idx2;
         }
@@ -1427,10 +1430,10 @@ static void generic_linkage_vector(const t_index N,
       // Find the nearest neighbor for idx2.
       if (idx2<N_1) {
         n_nghbr[idx2] = j = active_nodes.succ[idx2]; // exists, maximally N-1
-        min = dist.sqeuclidean(idx2,j);
+        min = dist.template sqeuclidean<true>(idx2,j);
         for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
-          t_float const tmp = dist.sqeuclidean(idx2, j);
-          if (tmp<min) {
+          t_float const tmp = dist.template sqeuclidean<true>(idx2, j);
+          if (tmp < min) {
             min = tmp;
             n_nghbr[idx2] = j;
           }
@@ -1452,9 +1455,6 @@ static void generic_linkage_vector_alternative(const t_index N,
 
     This algorithm is valid for the distance update methods
     "Ward", "centroid" and "median" only!
-
-    This implementation does not give defined results when NaN or Inf values
-    are returned by the distance function.
   */
   const t_index N_1 = N-1;
   t_index i, j=0; // loop variables
@@ -1464,41 +1464,25 @@ static void generic_linkage_vector_alternative(const t_index N,
   auto_array_ptr<t_float> mindist(2*N-2); // distances to the nearest neighbors
 
   doubly_linked_list active_nodes(N+N_1);
-  binary_min_heap nn_distances(N_1, 2*N-2, 1); // minimum heap structure for the
-                               // distance to the nearest neighbor of each point
+  binary_min_heap nn_distances(N_1, 2*N-2, 1); // minimum heap structure for
+                          // the distance to the nearest neighbor of each point
 
   t_float min; // minimum for nearest-neighbor searches
 
   // Initialize the minimal distances:
   // Find the nearest neighbor of each point.
-  // n_nghbr[i] = argmin_{j<i} D(i,j) for i in range(N-1)
-  for (i=1; i<N; i++) {
-    t_index idx = j = 0;
-    switch (method) {
-    case METHOD_METR_WARD:
-      min = dist.ward_initial(i,j);
-      break;
-    default:
-      min = dist.sqeuclidean(i,j);
-    }
-    for(j++; min!=min && j<i; j++) { // eliminate NaN if possible
-      switch (method) {
-      case METHOD_METR_WARD:
-        min = dist.ward_initial(i,j);
-        break;
-      default:
-        min = dist.sqeuclidean(i,j);
-      }
-      idx = j;
-    }
-    for( ; j<i; j++) {
+  // n_nghbr[i] = argmin_{j>i} D(i,j) for i in range(N-1)
+  for (i=1; i<N; ++i) {
+    min = std::numeric_limits<t_float>::infinity();
+    t_index idx;
+    for (idx=j=0; j<i; ++j) {
       t_float tmp;
       switch (method) {
       case METHOD_METR_WARD:
         tmp = dist.ward_initial(i,j);
         break;
       default:
-        tmp = dist.sqeuclidean(i,j);
+        tmp = dist.template sqeuclidean<true>(i,j);
       }
       if (tmp<min) {
         min = tmp;
@@ -1515,12 +1499,12 @@ static void generic_linkage_vector_alternative(const t_index N,
     n_nghbr[i] = idx;
   }
 
-  // Put the minimal distances into a heap structure to make the repeated global
-  // minimum searches fast.
+  // Put the minimal distances into a heap structure to make the repeated
+  // global minimum searches fast.
   nn_distances.heapify(mindist);
 
   // Main loop: We have N-1 merging steps.
-  for (i=N; i<N+N_1; i++) {
+  for (i=N; i<N+N_1; ++i) {
     /*
       The bookkeeping is different from the "stored matrix approach" algorithm
       generic_linkage.
@@ -1530,15 +1514,15 @@ static void generic_linkage_vector_alternative(const t_index N,
 
           mindist[i] ≥ min_{j<i} D(i,j)
 
-      Moreover, new nodes do not re-use one of the old indices, but they are given
-      a new, unique index (SciPy convention: initial nodes are 0,…,N−1, new
-      nodes are N,…,2N−2).
+      Moreover, new nodes do not re-use one of the old indices, but they are
+      given a new, unique index (SciPy convention: initial nodes are 0,…,N−1,
+      new nodes are N,…,2N−2).
 
       Invalid nearest neighbors are not recognized by the fact that the stored
       distance is smaller than the actual distance, but the list active_nodes
       maintains a flag whether a node is inactive. If n_nghbr[i] points to an
-      active node, the entries nn_distances[i] and n_nghbr[i] are valid, otherwise
-      they must be recomputed.
+      active node, the entries nn_distances[i] and n_nghbr[i] are valid,
+      otherwise they must be recomputed.
     */
     idx1 = nn_distances.argmin();
     while ( active_nodes.is_inactive(n_nghbr[idx1]) ) {
@@ -1598,10 +1582,10 @@ static void generic_linkage_vector_alternative(const t_index N,
           but maybe bigger than max(d1,d2).
         */
         min = dist.ward_extended(active_nodes.start, i);
-        // TBD: avoid NaN
-        for (j=active_nodes.succ[active_nodes.start]; j<i; j=active_nodes.succ[j]) {
+        for (j=active_nodes.succ[active_nodes.start]; j<i;
+             j=active_nodes.succ[j]) {
           t_float tmp = dist.ward_extended(j, i);
-          if (tmp<min) {
+          if (tmp < min) {
             min = tmp;
             n_nghbr[i] = j;
           }
@@ -1615,10 +1599,10 @@ static void generic_linkage_vector_alternative(const t_index N,
           but maybe smaller than min(d1,d2).
         */
         min = dist.sqeuclidean_extended(active_nodes.start, i);
-        // TBD: avoid NaN
-        for (j=active_nodes.succ[active_nodes.start]; j<i; j=active_nodes.succ[j]) {
+        for (j=active_nodes.succ[active_nodes.start]; j<i;
+             j=active_nodes.succ[j]) {
           t_float tmp = dist.sqeuclidean_extended(j, i);
-          if (tmp<min) {
+          if (tmp < min) {
             min = tmp;
             n_nghbr[i] = j;
           }

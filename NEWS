@@ -98,3 +98,17 @@ Version 1.1.6, 03/12/2012
 Version 1.1.7, 09/17/2012
 
   • Scipy import is now optional (suggested by Forest Gregg)
+
+  • Compatibility fix for NumPy 1.7. Thanks to Semihcan Doken for the bug
+    report.
+
+Version 1.1.8, 08/28/2012
+
+  • Test for NaN dissimilarity values: Now the algorithms produce an error
+    message instead of silently giving false results. The documentation was
+    updated accordingly. This is the final design as intended: the fastcluster
+    package handles infinity values correctly but complains about NaNs.
+
+  • The Python interface now works with both Python 2 and Python 3.
+
+  • Changed the license to BSD.
