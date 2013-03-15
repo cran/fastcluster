@@ -112,3 +112,9 @@ Version 1.1.8, 08/28/2012
   • The Python interface now works with both Python 2 and Python 3.
 
   • Changed the license to BSD.
+
+Version 1.1.9, 03/15/2013
+
+  • Compatibility fix for the MSVC compilers on Windows.
+
+  • Simplified GIL release in the Python interface.

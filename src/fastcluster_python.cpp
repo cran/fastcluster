@@ -151,11 +151,25 @@ PyMODINIT_FUNC init_fastcluster(void)  {
 
 #endif // PY_VERSION
 
-static void end_allow_threads(PyThreadState * PythonThreadSave) {
-  if (PythonThreadSave) { // Only restore if the state has been saved
-      PyEval_RestoreThread(PythonThreadSave);
+class GIL_release
+  {
+  public:
+    inline
+    GIL_release(bool really = true)
+      : _save(really ? PyEval_SaveThread() : NULL)
+    {
     }
-}
+
+    inline
+    ~GIL_release()
+    {
+      if (_save)
+        PyEval_RestoreThread(_save);
+    }
+
+  private:
+    PyThreadState * _save;
+  };
 
 /*
   Interface to Python, part 1:
@@ -166,7 +180,6 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
   PyArrayObject * D, * Z;
   long int N_ = 0;
   unsigned char method;
-  PyThreadState * PythonThreadSave = NULL;
 
   try{
     // Parse the input arguments
@@ -212,7 +225,7 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
     }
 
     // Allow threads!
-    PythonThreadSave = PyEval_SaveThread();
+    GIL_release G;
 
     t_float * const D_ = reinterpret_cast<t_float *>(PyArray_DATA(D));
     cluster_result Z2(N-1);
@@ -270,46 +283,31 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
     else {
       generate_SciPy_dendrogram<false>(Z_, Z2, N);
     }
-
-    /* Hack: prevent PyEval_RestoreThread from being called a second time
-       in the "catch" block, in case the first PyEval_RestoreThread in
-       end_allow_threads throws an exception.
-
-       (Can PyEval_RestoreThread throw an exception? I don't know, so I do this
-       to be on the safe side.)
-    */
-    PyThreadState * const PythonThreadSave2 = PythonThreadSave;
-    PythonThreadSave = NULL;
-    end_allow_threads(PythonThreadSave2);
-    Py_RETURN_NONE;
   } // try
   catch (const std::bad_alloc&) {
-    end_allow_threads(PythonThreadSave);
     return PyErr_NoMemory();
   }
   catch(const std::exception& e){
-    end_allow_threads(PythonThreadSave);
     PyErr_SetString(PyExc_EnvironmentError, e.what());
     return NULL;
   }
   catch(const nan_error&){
-    end_allow_threads(PythonThreadSave);
     PyErr_SetString(PyExc_FloatingPointError, "NaN dissimilarity value.");
     return NULL;
   }
   #ifdef FE_INVALID
   catch(const fenv_error&){
-    end_allow_threads(PythonThreadSave);
-    PyErr_SetString(PyExc_FloatingPointError, "NaN dissimilarity value in intermediate results.");
+    PyErr_SetString(PyExc_FloatingPointError,
+                    "NaN dissimilarity value in intermediate results.");
     return NULL;
   }
   #endif
   catch(...){
-    end_allow_threads(PythonThreadSave);
     PyErr_SetString(PyExc_EnvironmentError,
                     "C++ exception (unknown reason). Please send a bug report.");
     return NULL;
   }
+  Py_RETURN_NONE;
 }
 
 /*
@@ -910,7 +908,6 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
   PyArrayObject * X, * Z;
   unsigned char method, metric;
   PyObject * extraarg;
-  PyThreadState * PythonThreadSave = NULL;
 
   try{
     // Parse the input arguments
@@ -1012,10 +1009,8 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
       return NULL;
     }
 
-    // Allow threads!
-    if (metric!=METRIC_USER) {
-      PythonThreadSave = PyEval_SaveThread();
-    }
+    // Allow threads if the metric is not "user"!
+    GIL_release G(metric!=METRIC_USER);
 
     switch (method) {
     case METHOD_METR_SINGLE:
@@ -1045,30 +1040,15 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
     else {
       generate_SciPy_dendrogram<false>(Z_, Z2, N);
     }
-
-    /* Hack: prevent PyEval_RestoreThread from being called a second time
-       in the "catch" block, in case the first PyEval_RestoreThread in
-       end_allow_threads throws an exception.
-
-       (Can PyEval_RestoreThread throw an exception? I don't know, so I do this
-       to be on the safe side.)
-    */
-    PyThreadState * const PythonThreadSave2 = PythonThreadSave;
-    PythonThreadSave = NULL;
-    end_allow_threads(PythonThreadSave2);
-    Py_RETURN_NONE;
   } // try
   catch (const std::bad_alloc&) {
-    end_allow_threads(PythonThreadSave);
     return PyErr_NoMemory();
   }
   catch(const std::exception& e){
-    end_allow_threads(PythonThreadSave);
     PyErr_SetString(PyExc_EnvironmentError, e.what());
     return NULL;
   }
   catch(const nan_error&){
-    end_allow_threads(PythonThreadSave);
     PyErr_SetString(PyExc_FloatingPointError, "NaN dissimilarity value.");
     return NULL;
   }
@@ -1076,9 +1056,9 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
     return NULL;
   }
   catch(...){
-    end_allow_threads(PythonThreadSave);
     PyErr_SetString(PyExc_EnvironmentError,
                     "C++ exception (unknown reason). Please send a bug report.");
     return NULL;
   }
+  Py_RETURN_NONE;
 }

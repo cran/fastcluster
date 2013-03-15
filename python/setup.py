@@ -4,9 +4,13 @@ import sys
 if sys.hexversion < 0x03000000: # uniform unicode handling for both Python 2.x and 3.x
     def u(x):
         return x.decode('utf-8')
+    def textfileopen(filename):
+        return open(filename, mode='r')
 else:
     def u(x):
         return x
+    def textfileopen(filename):
+        return open(filename, mode='r', encoding='utf_8')
 u('''
   fastcluster: Fast hierarchical clustering routines for R and Python
 
@@ -17,7 +21,7 @@ u('''
 #distutils.debug.DEBUG = 'yes'
 from numpy.distutils.core import setup, Extension
 
-with open('fastcluster.py', 'r') as f:
+with textfileopen('fastcluster.py') as f:
     for line in f:
         if line.find('__version_info__ =')==0:
             version = '.'.join(line.split("'")[1:-1:2])

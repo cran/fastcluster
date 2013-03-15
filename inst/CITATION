@@ -2,8 +2,8 @@ citHeader("To cite package 'fastcluster' in publications use:")
 citEntry(entry = "Manual"
         ,title = "fastcluster: Fast hierarchical clustering routines for R and Python"
         ,author = as.person("Daniel M\\\"ullner")
-        ,year = "2012"
-        ,note = "Version 1.1.8"
+        ,year = "2013"
+        ,note = "Version 1.1.9"
         ,url = "http://math.stanford.edu/~muellner"
-        ,textVersion = "Daniel Müllner, fastcluster: Fast hierarchical clustering routines for R and Python, Version 1.1.8, 2012. Available at CRAN http://cran.r-project.org and PyPI http://pypi.python.org/pypi/fastcluster."
+        ,textVersion = "Daniel Müllner, fastcluster: Fast hierarchical clustering routines for R and Python, Version 1.1.9, 2013. Available at CRAN http://cran.r-project.org and PyPI http://pypi.python.org/pypi/fastcluster."
 )

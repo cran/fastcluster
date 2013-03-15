@@ -11,7 +11,7 @@ else:
         return x
 print(u('''Test program for the 'fastcluster' package.
 
-Copyright © 2011 Daniel Müllner, <http://math.stanford.edu/~muellner>
+Copyright (c) 2011 Daniel Müllner, <http://math.stanford.edu/~muellner>
 
 If everything is OK, the test program will run forever, without an error
 message.
@@ -34,25 +34,52 @@ np.random.seed(seed)
 abstol = 1e-14 # absolute tolerance
 rtol = 1e-13 # relative tolerance
 
+# NaN values are used in computations. Do not warn about them.
+np.seterr(invalid='ignore')
+
+def correct_for_zero_vectors(D, pcd, metric):
+    # Correct some metrics: we want the distance from the zero vector
+    # to itself to be 0, not NaN.
+    if metric in ('jaccard', 'dice', 'sokalsneath'):
+        z = np.flatnonzero(np.all(pcd==0, axis=1))
+        if len(z):
+            DD = squareform(D)
+            DD[np.ix_(z, z)] = 0
+            D = squareform(DD)
+    return D
+
 def test_all(n,dim):
   method = 'single'
 
   # metrics for boolean vectors
   pcd = np.array(np.random.random_integers(0,1,(n,dim)), dtype=np.bool)
   pcd2 = pcd.copy()
-  for metric in ('hamming', 'jaccard', 'yule', 'matching', 'dice', #'kulsinski',
+
+  for metric in ('hamming', 'jaccard', 'yule', 'matching', 'dice',
                  'rogerstanimoto',
                  #'sokalmichener',
-                 # exclude, bug in older Scipy versions
+                 # exclude, bug in Scipy
                  # http://projects.scipy.org/scipy/ticket/1486
                  'russellrao', 'sokalsneath',
                  #'kulsinski'
-                 # exclude, bug in older Scipy versions
+                 # exclude, bug in Scipy
                  # http://projects.scipy.org/scipy/ticket/1484
                  ):
     sys.stdout.write("Metric: " + metric + "...")
     D = pdist(pcd, metric)
-    Z2 = fc.linkage_vector(pcd, method, metric)
+    D = correct_for_zero_vectors(D, pcd, metric)
+
+    try:
+        Z2 = fc.linkage_vector(pcd, method, metric)
+    except FloatingPointError:
+        # If linkage_vector reported a NaN dissimilarity value,
+        # check whether the distance matrix really contains NaN.
+        if np.any(np.isnan(D)):
+            print("Skip this test: NaN dissimilarity value.")
+            continue
+        else:
+            raise AssertionError('"linkage_vector" erroneously reported NaN.')
+
     if np.any(pcd2!=pcd):
       raise AssertionError('Input array was corrupted.', pcd)
     test(Z2, method, D)
@@ -60,27 +87,36 @@ def test_all(n,dim):
   # metrics for real vectors
   bound = math.sqrt(n)
   pcd = np.random.random_integers(-bound,bound,(n,dim))
-  for metric in ['euclidean', 'sqeuclidean', 'cityblock', 'chebychev', 'minkowski',
-                 'cosine', 'correlation', 'hamming', 'jaccard',
-                 #'canberra',
-                 # exclude, bug in older Scipy versions
+  for metric in ['euclidean', 'sqeuclidean', 'cityblock', 'chebychev',
+                 'minkowski', 'cosine', 'correlation', 'hamming', 'jaccard',
+                 'canberra',
+                 # canberra: see bug in older Scipy versions
                  # http://projects.scipy.org/scipy/ticket/1430
-                 'braycurtis', 'seuclidean', 'mahalanobis',
-                 'user']:
+                 'braycurtis', 'seuclidean', 'mahalanobis', 'user']:
     sys.stdout.write("Metric: " + metric + "...")
     if metric=='minkowski':
-      p = np.random.uniform(1.,10.)
-      sys.stdout.write("p: " + str(p) + "...")
-      D = pdist(pcd, metric, p)
-      Z2 = fc.linkage_vector(pcd, method, metric, p)
+        p = np.random.uniform(1.,10.)
+        sys.stdout.write("p: " + str(p) + "...")
+        D = pdist(pcd, metric, p)
+        Z2 = fc.linkage_vector(pcd, method, metric, p)
     elif metric=='user':
-      # Euclidean metric as a user function
-      fn = (lambda u, v: np.sqrt(((u-v)*(u-v).T).sum()))
-      D = pdist(pcd, fn)
-      Z2 = fc.linkage_vector(pcd, method, fn)
+        # Euclidean metric as a user function
+        fn = (lambda u, v: np.sqrt(((u-v)*(u-v).T).sum()))
+        D = pdist(pcd, fn)
+        Z2 = fc.linkage_vector(pcd, method, fn)
     else:
-      D = pdist(pcd, metric)
-      Z2 = fc.linkage_vector(pcd, method, metric)
+        D = pdist(pcd, metric)
+        D = correct_for_zero_vectors(D, pcd, metric)
+        try:
+            Z2 = fc.linkage_vector(pcd, method, metric)
+        except FloatingPointError:
+            if np.any(np.isnan(D)):
+                print("Skip this test: NaN dissimilarity value.")
+                continue
+            else:
+                raise AssertionError(
+                    '"linkage_vector" erroneously reported NaN.')
+
     test(Z2, method, D)
 
   D = pdist(pcd)
@@ -89,7 +125,6 @@ def test_all(n,dim):
     test(Z2, method, D)
 
 def test(Z2, method, D):
-    #print(np.diff(Z2[:,2]))
     sys.stdout.write("Method: " + method + "...")
     I = np.array(Z2[:,:2], dtype=int)
 
@@ -109,7 +144,9 @@ def test(Z2, method, D):
       gmin = np.nanmin(mins)
       if abs(Z2[i,2]-gmin) > max(abs(Z2[i,2]),abs(gmin))*rtol and \
             abs(Z2[i,2]-gmin)>abstol:
-          raise AssertionError('Not the global minimum in step {2}: {0}, {1}'.format(Z2[i,2], gmin,i), squareform(D))
+          raise AssertionError(
+              'Not the global minimum in step {2}: {0}, {1}'.
+              format(Z2[i,2], gmin,i), squareform(D))
       i1, i2 = row_repr[I[i,:]]
       if (i1<0):
         raise AssertionError('Negative index i1.', squareform(D))
@@ -121,15 +158,18 @@ def test(Z2, method, D):
         i1, i2 = i2, i1
       if abs(Ds[i1,i2]-gmin) > max(abs(Ds[i1,i2]),abs(gmin))*rtol and \
             abs(Ds[i1,i2]-gmin)>abstol:
-          raise AssertionError('The global minimum is not at the right place in step {5}: ({0}, {1}): {2} != {3}. Difference: {4}'
-                               .format(i1, i2, Ds[i1, i2], gmin, Ds[i1, i2]-gmin, i), squareform(D))
+          raise AssertionError(
+              'The global minimum is not at the right place in step {5}: '
+              '({0}, {1}): {2} != {3}. Difference: {4}'
+              .format(i1, i2, Ds[i1, i2], gmin, Ds[i1, i2]-gmin, i),
+              squareform(D))
 
       s1 = size[i1]
       s2 = size[i2]
       S = float(s1+s2)
       if method=='single':
-          if i1>0: # mostly unnecessary; workaround for a bug/feature in NumPy 1.7.0.dev
-          # see http://projects.scipy.org/numpy/ticket/2078
+          if i1>0: # mostly unnecessary; workaround for a bug/feature in NumPy
+          # 1.7.0.dev, see http://projects.scipy.org/numpy/ticket/2078
               Ds[:i1,i2]   = np.min( Ds[:i1,(i1,i2)],axis=1)
           Ds[i1:i2,i2] = np.minimum(Ds[i1,i1:i2],Ds[i1:i2,i2])
           Ds[i2,i2:]   = np.min( Ds[(i1,i2),i2:],axis=0)
@@ -153,7 +193,8 @@ def test(Z2, method, D):
                          +np.square(Ds[:i1,i2])*(s2+size[:i1]))/(S+size[:i1]))
           Ds[i1:i2,i2] = np.sqrt((np.square(Ds[i1,i1:i2])*(s1+size[i1:i2])
                          -gmin*gmin*size[i1:i2]
-                         +np.square(Ds[i1:i2,i2])*(s2+size[i1:i2]))/(S+size[i1:i2]))
+                         +np.square(Ds[i1:i2,i2])*(s2+size[i1:i2]))
+                                 /(S+size[i1:i2]))
           Ds[i2,i2:]   = np.sqrt((np.square(Ds[i1,i2:])*(s1+size[i2:])
                          -gmin*gmin*size[i2:]
                          +np.square(Ds[i2,i2:])*(s2+size[i2:]))/(S+size[i2:]))
@@ -165,12 +206,12 @@ def test(Z2, method, D):
           Ds[i2,i2:]   = np.sqrt((np.square(Ds[i1,i2:])*s1
                          +np.square(Ds[i2,i2:])*s2)*S-gmin*gmin*s1*s2) / S
       elif method=='median':
-          Ds[:i1,i2]   = np.sqrt((np.square(Ds[:i1,i1])+np.square(Ds[:i1,i2]))*2
-                         -gmin*gmin)*.5
-          Ds[i1:i2,i2] = np.sqrt((np.square(Ds[i1,i1:i2])+np.square(Ds[i1:i2,i2]))*2
-                         -gmin*gmin)*.5
-          Ds[i2,i2:]   = np.sqrt((np.square(Ds[i1,i2:])+np.square(Ds[i2,i2:]))*2
-                         -gmin*gmin)*.5
+          Ds[:i1,i2]   = np.sqrt((np.square(Ds[:i1,i1])
+                                  +np.square(Ds[:i1,i2]))*2-gmin*gmin)*.5
+          Ds[i1:i2,i2] = np.sqrt((np.square(Ds[i1,i1:i2])
+                                  +np.square(Ds[i1:i2,i2]))*2-gmin*gmin)*.5
+          Ds[i2,i2:]   = np.sqrt((np.square(Ds[i1,i2:])
+                                  +np.square(Ds[i2,i2:]))*2-gmin*gmin)*.5
       else:
           raise ValueError('Unknown method.')
 
@@ -190,6 +231,6 @@ while True:
   try:
     test_all(n,dim)
   except AssertionError as E:
-    print(E[0])
-    print(E[1])
+    print(E.args[0])
+    print(E.args[1])
     sys.exit()

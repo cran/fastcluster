@@ -9,7 +9,7 @@ else:
         return x
 print(u('''Test program for the 'fastcluster' package.
 
-Copyright © 2011 Daniel Müllner, <http://math.stanford.edu/~muellner>
+Copyright (c) 2011 Daniel Müllner, <http://math.stanford.edu/~muellner>
 
 If everything is OK, the test program will run forever, without an error
 message.
@@ -30,6 +30,9 @@ seed = np.random.randint(0,1e9)
 np.random.seed(seed)
 #abstol = 1e-14 # absolute tolerance
 rtol = 1e-14 # relative tolerance
+
+# NaN values are used in computations. Do not warn about them.
+np.seterr(invalid='ignore')
 
 def test_all():
   D2 = D.copy()

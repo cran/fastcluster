@@ -37,7 +37,15 @@
 
 #include <algorithm>
 
+// Microsoft Visual Studio does not have fenv.h
+#ifdef _MSC_VER
+#if (_MSC_VER == 1500 || _MSC_VER == 1600)
+#define NO_INCLUDE_FENV 
+#endif
+#endif
+#ifndef NO_INCLUDE_FENV
 #include <fenv.h>
+#endif
 
 #include <cfloat> // also for DBL_MAX, DBL_MIN
 #ifndef DBL_MANT_DIG
