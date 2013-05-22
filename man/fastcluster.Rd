@@ -34,6 +34,8 @@ source distribution.
     \href{http://cran.r-project.org/web/packages/fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf}. Get this from the R
     command line with \code{vignette('fastcluster')}.
 
+    \item JSS paper: \url{http://www.jstatsoft.org/v53/i09/}.
+
     \item See the author's home page for a performance comparison:
   \url{http://math.stanford.edu/~muellner/fastcluster.html}.
     }

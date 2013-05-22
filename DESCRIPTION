@@ -1,13 +1,13 @@
 Package: fastcluster
 Encoding: UTF-8
 Type: Package
-Version: 1.1.9
-Date: 2013-03-15
+Version: 1.1.10
+Date: 2013-05-22
 Title: Fast hierarchical clustering routines for R and Python
 Authors@R: person("Daniel", "Müllner", email =
-        "fastcluster@math.stanford.edu", role = c("aut", "cph", "cre"))
+        "muellner@math.stanford.edu", role = c("aut", "cph", "cre"))
 Author: Daniel Müllner, http://math.stanford.edu/~muellner
-Maintainer: Daniel Müllner <fastcluster@math.stanford.edu>
+Maintainer: Daniel Müllner <muellner@math.stanford.edu>
 Enhances: stats, flashClust
 Description: This is a two-in-one package which provides interfaces to
         both R and Python. It implements fast hierarchical,
@@ -15,16 +15,16 @@ Description: This is a two-in-one package which provides interfaces to
         designed as drop-in replacement for existing routines:
         “linkage” in the SciPy package “scipy.cluster.hierarchy”,
         “hclust” in R's “stats” package, and the “flashClust” package.
-        It provides the same functionality, with the benefit of a much
+        It provides the same functionality with the benefit of a much
         faster implementation. Moreover, there are memory-saving
         routines for clustering of vector data, which go beyond what
         the existing packages provide. For information on how to
         install the Python files, see the file INSTALL in the source
         distribution.
-License: FreeBSD | file LICENSE
+License: FreeBSD | GPL-2 | file LICENSE
 URL: http://math.stanford.edu/~muellner/fastcluster.html
 BuildVignettes: False
-Packaged: 2013-03-16 22:04:37 UTC; muellner
+Packaged: 2013-05-23 05:34:33 UTC; muellner
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2013-03-17 07:54:03
+Date/Publication: 2013-05-23 07:47:46

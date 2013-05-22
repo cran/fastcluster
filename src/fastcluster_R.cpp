@@ -4,9 +4,21 @@
   Copyright © 2011 Daniel Müllner
   <http://math.stanford.edu/~muellner>
 */
+#if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 6))
+#define HAVE_DIAGNOSTIC 1
+#endif
+
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wredundant-decls"
+#pragma GCC diagnostic ignored "-Wpadded"
+#endif
 #include <Rdefines.h>
 #include <R_ext/Rdynload.h>
 #include <Rmath.h> // for R_pow
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
 
 #define fc_isnan(X) ((X)!=(X))
 // There is ISNAN but it is so much slower on my x86_64 system with GCC!
@@ -15,6 +27,16 @@
 
 #include "fastcluster.cpp"
 
+/* Since the public interface is given by the Python respectively R interface,
+ * we do not want other symbols than the interface initalization routines to be
+ * visible in the shared object file. The "visibility" switch is a GCC concept.
+ * Hiding symbols keeps the relocation table small and decreases startup time.
+ * See http://gcc.gnu.org/wiki/Visibility
+ */
+#if HAVE_VISIBILITY
+#pragma GCC visibility push(hidden)
+#endif
+
 /*
   Helper function: order the nodes so that they can be displayed nicely
   in a dendrogram.
@@ -22,10 +44,17 @@
   This is used for the 'order' field in the R output.
 */
 
-struct node_pos {
-  int node;
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpadded"
+#endif
+struct pos_node {
   t_index pos;
+  int node;
 };
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
 
 void order_nodes(const int N, const int * const merge, const t_index * const node_size, int * const order) {
   /* Parameters:
@@ -40,20 +69,20 @@ void order_nodes(const int N, const int * const merge, const t_index * const nod
 
      Runtime: Θ(N)
   */
-  auto_array_ptr<node_pos> queue(N/2);
+  auto_array_ptr<pos_node> queue(N/2);
 
   int parent;
   int child;
   t_index pos = 0;
 
-  queue[0].node = N-2;
   queue[0].pos = 0;
+  queue[0].node = N-2;
   t_index idx = 1;
 
   do {
     --idx;
-    parent = queue[idx].node;
     pos = queue[idx].pos;
+    parent = queue[idx].node;
 
     // First child
     child = merge[parent];
@@ -63,8 +92,8 @@ void order_nodes(const int N, const int * const merge, const t_index * const nod
     }
     else { /* compound node: put it on top of the queue and decompose it
               in a later iteration. */
-      queue[idx].node = child-1; // convert index-1 based to index-0 based
       queue[idx].pos = pos;
+      queue[idx].node = child-1; // convert index-1 based to index-0 based
       ++idx;
       pos += node_size[child-1];
     }
@@ -74,8 +103,8 @@ void order_nodes(const int N, const int * const merge, const t_index * const nod
       order[pos] = -child;
     }
     else {
-      queue[idx].node = child-1;
       queue[idx].pos = pos;
+      queue[idx].node = child-1;
       ++idx;
     }
   } while (idx>0);
@@ -87,10 +116,9 @@ template <const bool sorted>
 void generate_R_dendrogram(int * const merge, double * const height, int * const order, cluster_result & Z2, const int N) {
   // The array "nodes" is a union-find data structure for the cluster
   // identites (only needed for unsorted cluster_result input).
-  union_find nodes;
+  union_find nodes(sorted ? 0 : N);
   if (!sorted) {
     std::stable_sort(Z2[0], Z2[N-1]);
-    nodes.init(N);
   }
 
   t_index node1, node2;
@@ -146,6 +174,10 @@ enum {
   METRIC_R_MINKOWSKI = 5
 };
 
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpadded"
+#endif
 class R_dissimilarity {
 private:
   t_float * Xa;
@@ -155,26 +187,36 @@ private:
   t_float postprocessarg;
 
   t_float (R_dissimilarity::*distfn) (const t_index, const t_index) const;
+  auto_array_ptr<t_index> row_repr;
   int N;
 
-  auto_array_ptr<t_index> row_repr;
+  // no default constructor
+  R_dissimilarity();
+  // noncopyable
+  R_dissimilarity(R_dissimilarity const &);
+  R_dissimilarity & operator=(R_dissimilarity const &);
 
-  // derived constructor
 public:
-  R_dissimilarity (t_float * const X,
-                   const int N,
-                   const int dim,
-                   t_float * const members,
+  // Ignore warning about uninitialized member variables. I know what I am
+  // doing here, and some member variables are only used for certain metrics.
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Weffc++"
+#endif
+  R_dissimilarity (t_float * const X_,
+                   const int N_,
+                   const int dim_,
+                   t_float * const members_,
                    const unsigned char method,
                    const unsigned char metric,
                    const t_float p,
                    bool make_row_repr)
-    : Xa(X),
-      dim(dim),
-      members(members),
+    : Xa(X_),
+      dim(dim_),
+      members(members_),
       postprocessfn(NULL),
       postprocessarg(p),
-      N(N)
+      N(N_)
   {
     switch (method) {
     case METHOD_VECTOR_SINGLE:
@@ -200,7 +242,7 @@ public:
         postprocessfn = &cluster_result::power;
         break;
       default:
-        throw 0;
+        throw std::runtime_error("Invalid method.");
       }
       break;
 
@@ -220,6 +262,9 @@ public:
     }
 
   }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
 
   inline t_float operator () (const t_index i, const t_index j) const {
     return (this->*distfn)(i,j);
@@ -347,8 +392,15 @@ public:
     //return sqrt(dist);
     // we take the square root later
     if (check_NaN) {
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
       if (fc_isnan(dist))
         throw(nan_error());
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
     }
     return dist;
   }
@@ -420,12 +472,19 @@ private:
         diff = fabs(*p1 - *p2);
         if (sum > DBL_MIN || diff > DBL_MIN) {
           dev = diff/sum;
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
           if(!ISNAN(dev) ||
              (!R_FINITE(diff) && diff == sum &&
               /* use Inf = lim x -> oo */ (dev = 1.))) {
             dist += dev;
             ++count;
           }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
         }
       }
       ++p1;
@@ -451,12 +510,19 @@ private:
           //          warning(_("treating non-finite values as NA"));
         }
         else {
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
           if(*p1 || *p2) {
             ++count;
             if( ! (*p1 && *p2) ) {
               ++dist;
             }
           }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
           ++total;
         }
       }
@@ -496,6 +562,9 @@ private:
   }
 
 };
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
 
 extern "C" {
   SEXP fastcluster(SEXP const N_, SEXP const method_, SEXP D_, SEXP members_) {
@@ -585,6 +654,8 @@ extern "C" {
       case METHOD_METR_MEDIAN:
         generic_linkage<METHOD_METR_MEDIAN, t_float>(N, D__, NULL, Z2);
         break;
+      default:
+        throw std::runtime_error("Invalid method.");
       }
 
       D__.free();     // Free the memory now
@@ -628,10 +699,10 @@ extern "C" {
 
       UNPROTECT(6); // m, dim_m, h, o, r, n
     } // try
-    catch (std::bad_alloc&) {
+    catch (const std::bad_alloc&) {
       Rf_error( "Memory overflow.");
     }
-    catch(std::exception& e){
+    catch(const std::exception& e){
       Rf_error( e.what() );
     }
     catch(const nan_error&){
@@ -775,6 +846,9 @@ extern "C" {
       case METHOD_VECTOR_MEDIAN:
         generic_linkage_vector_alternative<METHOD_METR_MEDIAN>(N, dist, Z2);
         break;
+
+      default:
+        throw std::runtime_error("Invalid method.");
       }
 
       X.free();     // Free the memory now
@@ -819,10 +893,10 @@ extern "C" {
 
       UNPROTECT(6); // m, dim_m, h, o, r, n
     } // try
-    catch (std::bad_alloc&) {
+    catch (const std::bad_alloc&) {
       Rf_error( "Memory overflow.");
     }
-    catch(std::exception& e){
+    catch(const std::exception& e){
       Rf_error( e.what() );
     }
     catch(const nan_error&){
@@ -835,6 +909,9 @@ extern "C" {
     return r;
   }
 
+#if HAVE_VISIBILITY
+#pragma GCC visibility push(default)
+#endif
   void R_init_fastcluster(DllInfo * const info)
   {
     R_CallMethodDef callMethods[]  = {
@@ -844,5 +921,12 @@ extern "C" {
     };
     R_registerRoutines(info, NULL, callMethods, NULL, NULL);
   }
+#if HAVE_VISIBILITY
+#pragma GCC visibility pop
+#endif
 
 } // extern "C"
+
+#if HAVE_VISIBILITY
+#pragma GCC visibility pop
+#endif

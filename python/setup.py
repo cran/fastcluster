@@ -44,6 +44,7 @@ in the module scipy.cluster.hierarchy with the same functionality but much faste
 
 The interface is very similar to MATLAB's Statistics Toolbox API to make code easier to port from MATLAB to Python/Numpy. The core implementation of this library is in C++ for efficiency.
 """,
+      requires=['numpy'],
       ext_modules=[Extension('_fastcluster',
                              ['../src/fastcluster_python.cpp'],
                   # Feel free to uncomment the line below if you use the GCC.
@@ -55,12 +56,18 @@ The interface is very similar to MATLAB's Statistics Toolbox API to make code ea
                   # symbols by default. This can be turned off, resulting a in
                   # much smaller compiled library.
                   #
-                  #extra_compile_args=['-O3', '-Wall', '-Wconversion', '-Wsign-conversion', '-g0', '-march=native', '-mtune=native', '-fno-math-errno'],
-                  # (no -pedantic -Wextra, -ansi)
+                  # Optimization
+                  #extra_compile_args=['-O2', '-g0', '-march=native', '-mtune=native', '-fno-math-errno'],
+                  #
+                  # List of all warning switches, somewhere from stackoverflow.com
+                  #extra_compile_args=['-Wall', '-Weffc++', '-Wextra', '-Wall', '-Wcast-align', '-Wchar-subscripts', '-Wcomment', '-Wconversion', '-Wsign-conversion', '-Wdisabled-optimization', '-Wfloat-equal', '-Wformat', '-Wformat=2', '-Wformat-nonliteral', '-Wformat-security', '-Wformat-y2k', '-Wimport', '-Winit-self', '-Winline', '-Winvalid-pch', '-Wunsafe-loop-optimizations', '-Wmissing-braces', '-Wmissing-field-initializers', '-Wmissing-format-attribute', '-Wmissing-include-dirs', '-Wmissing-noreturn', '-Wpacked', '-Wparentheses', '-Wpointer-arith', '-Wredundant-decls', '-Wreturn-type', '-Wsequence-point', '-Wshadow', '-Wsign-compare', '-Wstack-protector', '-Wstrict-aliasing', '-Wstrict-aliasing=2', '-Wswitch', '-Wswitch-enum', '-Wtrigraphs', '-Wuninitialized', '-Wunknown-pragmas', '-Wunreachable-code', '-Wunused', '-Wunused-function', '-Wunused-label', '-Wunused-parameter', '-Wunused-value', '-Wunused-variable', '-Wvariadic-macros', '-Wvolatile-register-var', '-Wwrite-strings', '-Wlong-long', '-Wpadded', '-Wcast-qual', '-Wswitch-default', '-Wnon-virtual-dtor', '-Wold-style-cast', '-Woverloaded-virtual', '-Waggregate-return', '-Werror'],
+                  #
+                  # Linker optimization
+                  #extra_link_args=['-Wl,--strip-all'],
      )],
       keywords=['dendrogram', 'linkage', 'cluster', 'agglomerative', 'hierarchical', 'hierarchy', 'ward'],
       author=u("Daniel Müllner"),
-      author_email="fastcluster@math.stanford.edu",
+      author_email="muellner@math.stanford.edu",
       license="BSD <http://opensource.org/licenses/BSD-2-Clause>",
       classifiers = ["Topic :: Scientific/Engineering :: Information Analysis",
                      "Topic :: Scientific/Engineering :: Artificial Intelligence",

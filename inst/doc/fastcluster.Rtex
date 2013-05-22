@@ -1,4 +1,4 @@
-\def\fastclusterversion{1.1.9}
+\def\fastclusterversion{1.1.10}
 \documentclass[fontsize=10pt,paper=letter,BCOR=-6mm]{scrartcl}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
@@ -89,7 +89,7 @@
 %\VignetteIndexEntry{User's manual}
 \title{The \textit{fastcluster} package: User's manual}
 \author{\href{http://math.stanford.edu/~muellner}{Daniel Müllner}}
-\date{March 15, 2013}
+\date{May 22, 2013}
 \subtitle{Version \fastclusterversion}
 \maketitle
 
@@ -117,8 +117,10 @@ This document describes the usage for the two interfaces for R and Python and is
 
 If you use the fastcluster package for scientific work, please cite it as:
 \begin{quote}
-Daniel Müllner, \textit{fastcluster: Fast hierarchical clustering routines for R and Python}, Version \fastclusterversion, 2012. Available at CRAN \url{http://cran.r-project.org} and  and PyPI \url{http://pypi.python.org/pypi/fastcluster}.
+Daniel Müllner, \textit{fastcluster: Fast Hierarchical, Agglomerative Clustering Routines for R and Python}, Journal of Statistical Software, \textbf{53} (2013), no.~9, 1--17, \url{http://www.jstatsoft.org/v53/i09/}.
 \end{quote}
+
+\textbf{The fastcluster package is considered stable and will undergo few changes from now on. If some years from now there have not been any updates, this does not necessarily mean that the package is unmaintained but maybe it just was not necessary to correct anything. Of course, please still report potential bugs and incompatibilities to \texttt{muellner@math.stanford.edu}.}
 
 \tableofcontents
 

@@ -36,11 +36,12 @@
 */
 
 #include <algorithm>
+#include <stdexcept>
 
 // Microsoft Visual Studio does not have fenv.h
 #ifdef _MSC_VER
 #if (_MSC_VER == 1500 || _MSC_VER == 1600)
-#define NO_INCLUDE_FENV 
+#define NO_INCLUDE_FENV
 #endif
 #endif
 #ifndef NO_INCLUDE_FENV
@@ -66,6 +67,28 @@
 #ifndef INT32_MAX
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
+#endif
+
+#ifndef HAVE_DIAGNOSTIC
+#if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 6))
+#define HAVE_DIAGNOSTIC 1
+#endif
+#endif
+
+#ifndef HAVE_VISIBILITY
+#if __GNUC__ >= 4
+#define HAVE_VISIBILITY 1
+#endif
+#endif
+
+/* Since the public interface is given by the Python respectively R interface,
+ * we do not want other symbols than the interface initalization routines to be
+ * visible in the shared object file. The "visibility" switch is a GCC concept.
+ * Hiding symbols keeps the relocation table small and decreases startup time.
+ * See http://gcc.gnu.org/wiki/Visibility
+ */
+#if HAVE_VISIBILITY
+#pragma GCC visibility push(hidden)
 #endif
 
 typedef int_fast32_t t_index;
@@ -117,11 +140,19 @@ private:
   auto_array_ptr(auto_array_ptr const &); // non construction-copyable
   auto_array_ptr& operator=(auto_array_ptr const &); // non copyable
 public:
-  auto_array_ptr() { ptr = NULL; }
+  auto_array_ptr()
+    : ptr(NULL)
+  { }
   template <typename index>
-  auto_array_ptr(index const size) { init(size); }
+  auto_array_ptr(index const size)
+    : ptr(new type[size])
+  { }
   template <typename index, typename value>
-  auto_array_ptr(index const size, value const val) { init(size, val); }
+  auto_array_ptr(index const size, value const val)
+    : ptr(new type[size])
+  {
+    std::fill_n(ptr, size, val);
+  }
   ~auto_array_ptr() {
     delete [] ptr; }
   void free() {
@@ -163,9 +194,8 @@ private:
 public:
   cluster_result(const t_index size)
     : Z(size)
-  {
-    pos = 0;
-  }
+    , pos(0)
+  {}
 
   void append(const t_index node1, const t_index node2, const t_float dist) {
     Z[pos].node1 = node1;
@@ -242,7 +272,9 @@ private:
 public:
   doubly_linked_list(const t_index size)
     // Initialize to the given size.
-    : succ(size+1), pred(size+1)
+    : start(0)
+    , succ(size+1)
+    , pred(size+1)
   {
     for (t_index i=0; i<size; ++i) {
       pred[i+1] = i;
@@ -250,8 +282,9 @@ public:
     }
     // pred[0] is never accessed!
     //succ[size] is never accessed!
-    start = 0;
   }
+
+  ~doubly_linked_list() {}
 
   void remove(const t_index idx) {
     // Remove an index from the list.
@@ -291,10 +324,10 @@ private:
   t_index nextparent;
 
 public:
-  void init(const t_index size) {
-    parent.init(2*size-1, 0);
-    nextparent = size;
-  }
+  union_find(const t_index size)
+    : parent(size>0 ? 2*size-1 : 0, 0)
+    , nextparent(size)
+  { }
 
   t_index Find (t_index idx) const {
     if (parent[idx] != 0 ) { // a → b
@@ -349,12 +382,19 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
   min = std::numeric_limits<t_float>::infinity();
   for (i=1; i<N; ++i) {
     d[i] = D[i-1];
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
     if (d[i] < min) {
       min = d[i];
       idx2 = i;
     }
     else if (fc_isnan(d[i]))
       throw (nan_error());
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
   }
   Z2.append(0, idx2, min);
 
@@ -366,10 +406,17 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
     min = d[idx2];
     for (i=idx2; i<prev_node; i=active_nodes.succ[i]) {
       t_float tmp = D_(i, prev_node);
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
       if (tmp < d[i])
         d[i] = tmp;
       else if (fc_isnan(tmp))
         throw (nan_error());
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
       if (d[i] < min) {
         min = d[i];
         idx2 = i;
@@ -377,10 +424,17 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
     }
     for (; i<N; i=active_nodes.succ[i]) {
       t_float tmp = D_(prev_node, i);
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
       if (d[i] > tmp)
         d[i] = tmp;
       else if (fc_isnan(tmp))
         throw (nan_error());
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
       if (d[i] < min) {
         min = d[i];
         idx2 = i;
@@ -401,26 +455,47 @@ inline static void f_complete( t_float * const b, const t_float a ) {
 inline static void f_average( t_float * const b, const t_float a, const t_float s, const t_float t) {
   *b = s*a + t*(*b);
   #ifndef FE_INVALID
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
   if (fc_isnan(*b)) {
     throw(nan_error());
   }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
   #endif
 }
 inline static void f_weighted( t_float * const b, const t_float a) {
   *b = (a+*b)*.5;
   #ifndef FE_INVALID
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
   if (fc_isnan(*b)) {
     throw(nan_error());
   }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
   #endif
 }
 inline static void f_ward( t_float * const b, const t_float a, const t_float c, const t_float s, const t_float t, const t_float v) {
   *b = ( (v+s)*a - v*c + (v+t)*(*b) ) / (s+t+v);
   //*b = a+(*b)-(t*a+s*(*b)+v*c)/(s+t+v);
   #ifndef FE_INVALID
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
   if (fc_isnan(*b)) {
     throw(nan_error());
   }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
   #endif
 }
 inline static void f_centroid( t_float * const b, const t_float a, const t_float stc, const t_float s, const t_float t) {
@@ -429,14 +504,24 @@ inline static void f_centroid( t_float * const b, const t_float a, const t_float
   if (fc_isnan(*b)) {
     throw(nan_error());
   }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
   #endif
 }
 inline static void f_median( t_float * const b, const t_float a, const t_float c_4) {
   *b = (a+(*b))*.5 - c_4;
   #ifndef FE_INVALID
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
   if (fc_isnan(*b)) {
     throw(nan_error());
   }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
   #endif
 }
 
@@ -466,9 +551,16 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
 
   for (t_float const * DD=D; DD!=D+(static_cast<std::ptrdiff_t>(N)*(N-1)>>1);
        ++DD) {
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
     if (fc_isnan(*DD)) {
       throw(nan_error());
     }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
   }
 
   #ifdef FE_INVALID
@@ -628,6 +720,9 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
         f_ward(&D_(idx2, i), D_(idx1, i), min,
                size1, size2, static_cast<t_float>(members[i]) );
       break;
+
+    default:
+      throw std::runtime_error("Invalid method.");
     }
   }
   #ifdef FE_INVALID
@@ -658,34 +753,40 @@ class binary_min_heap {
   This implementation is not designed to handle NaN values.
   */
 private:
-  t_float * A;
+  t_float * const A;
   t_index size;
   auto_array_ptr<t_index> I;
   auto_array_ptr<t_index> R;
 
+  // no default constructor
+  binary_min_heap();
+  // noncopyable
+  binary_min_heap(binary_min_heap const &);
+  binary_min_heap & operator=(binary_min_heap const &);
+
 public:
-  binary_min_heap(const t_index size)
-    : I(size), R(size)
+  binary_min_heap(t_float * const A_, const t_index size_)
+    : A(A_), size(size_), I(size), R(size)
   { // Allocate memory and initialize the lists I and R to the identity. This
     // does not make it a heap. Call heapify afterwards!
-    this->size = size;
     for (t_index i=0; i<size; ++i)
       R[i] = I[i] = i;
   }
 
-  binary_min_heap(const t_index size1, const t_index size2,
+  binary_min_heap(t_float * const A_, const t_index size1, const t_index size2,
                   const t_index start)
-    : I(size1), R(size2)
+    : A(A_), size(size1), I(size1), R(size2)
   { // Allocate memory and initialize the lists I and R to the identity. This
     // does not make it a heap. Call heapify afterwards!
-    this->size = size1;
     for (t_index i=0; i<size; ++i) {
       R[i+start] = i;
       I[i] = i + start;
     }
   }
 
-  void heapify(t_float * const A) {
+  ~binary_min_heap() {}
+
+  void heapify() {
     // Arrange the indices I and R so that H[i] := A[I[i]] satisfies the heap
     // condition H[i] < H[2*i+1] and H[i] < H[2*i+2] for each i.
     //
@@ -693,7 +794,6 @@ public:
     // Reference: Cormen, Leiserson, Rivest, Stein, Introduction to Algorithms,
     // 3rd ed., 2009, Section 6.3 “Building a heap”
     t_index idx;
-    this->A = A;
     for (idx=(size>>1); idx>0; ) {
       --idx;
       update_geq_(idx);
@@ -808,9 +908,8 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
   auto_array_ptr<t_index> row_repr(N); // row_repr[i]: node number that the
                                        // i-th row represents
   doubly_linked_list active_nodes(N);
-  binary_min_heap nn_distances(N_1); // minimum heap structure for the distance
-                                     // to the nearest neighbor of each point
-
+  binary_min_heap nn_distances(&*mindist, N_1); // minimum heap structure for
+                        // the distance to the nearest neighbor of each point
   t_index node1, node2; // node numbers in the output
   t_float size1, size2; // and their cardinalities
 
@@ -829,6 +928,10 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
   for (i=0; i<N_1; ++i) {
     min = std::numeric_limits<t_float>::infinity();
     for (idx=j=i+1; j<N; ++j, ++DD) {
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
       if (*DD<min) {
         min = *DD;
         idx = j;
@@ -836,13 +939,16 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       else if (fc_isnan(*DD))
         throw(nan_error());
     }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
     mindist[i] = min;
     n_nghbr[i] = idx;
   }
 
   // Put the minimal distances into a heap structure to make the repeated
   // global minimum searches fast.
-  nn_distances.heapify(mindist);
+  nn_distances.heapify();
 
   #ifdef FE_INVALID
   if (feclearexcept(FE_INVALID)) throw fenv_error();
@@ -1143,7 +1249,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       break;
     }
 
-    case METHOD_METR_MEDIAN:
+    case METHOD_METR_MEDIAN: {
       /*
         Median linkage.
 
@@ -1185,6 +1291,10 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       }
       break;
     }
+
+    default:
+      throw std::runtime_error("Invalid method.");
+    }
   }
   #ifdef FE_INVALID
   if (fetestexcept(FE_INVALID)) throw fenv_error();
@@ -1222,12 +1332,19 @@ static void MST_linkage_core_vector(const t_index N,
   min = std::numeric_limits<t_float>::infinity();
   for (i=1; i<N; ++i) {
     d[i] = dist(0,i);
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
     if (d[i] < min) {
       min = d[i];
       idx2 = i;
     }
     else if (fc_isnan(d[i]))
       throw (nan_error());
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
   }
 
   Z2.append(0, idx2, min);
@@ -1241,10 +1358,17 @@ static void MST_linkage_core_vector(const t_index N,
 
     for (i=idx2; i<N; i=active_nodes.succ[i]) {
       t_float tmp = dist(i, prev_node);
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
       if (d[i] > tmp)
         d[i] = tmp;
       else if (fc_isnan(tmp))
         throw (nan_error());
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
       if (d[i] < min) {
         min = d[i];
         idx2 = i;
@@ -1275,9 +1399,8 @@ static void generic_linkage_vector(const t_index N,
   auto_array_ptr<t_index> row_repr(N); // row_repr[i]: node number that the
                                        // i-th row represents
   doubly_linked_list active_nodes(N);
-  binary_min_heap nn_distances(N_1); // minimum heap structure for the distance
-                                     // to the nearest neighbor of each point
-
+  binary_min_heap nn_distances(&*mindist, N_1); // minimum heap structure for
+                        // the distance to the nearest neighbor of each point
   t_index node1, node2;     // node numbers in the output
   t_float min; // minimum and row index for nearest-neighbor search
 
@@ -1318,7 +1441,7 @@ static void generic_linkage_vector(const t_index N,
 
   // Put the minimal distances into a heap structure to make the repeated
   // global minimum searches fast.
-  nn_distances.heapify(mindist);
+  nn_distances.heapify();
 
   // Main loop: We have N-1 merging steps.
   for (i=0; i<N_1; ++i) {
@@ -1371,6 +1494,8 @@ static void generic_linkage_vector(const t_index N,
     case METHOD_METR_MEDIAN:
       dist.merge_inplace_weighted(idx1, idx2);
       break;
+    default:
+      throw std::runtime_error("Invalid method.");
     }
 
     // Index idx2 now represents the new (merged) node with label N+i.
@@ -1472,8 +1597,8 @@ static void generic_linkage_vector_alternative(const t_index N,
   auto_array_ptr<t_float> mindist(2*N-2); // distances to the nearest neighbors
 
   doubly_linked_list active_nodes(N+N_1);
-  binary_min_heap nn_distances(N_1, 2*N-2, 1); // minimum heap structure for
-                          // the distance to the nearest neighbor of each point
+  binary_min_heap nn_distances(&*mindist, N_1, 2*N-2, 1); // minimum heap
+      // structure for the distance to the nearest neighbor of each point
 
   t_float min; // minimum for nearest-neighbor searches
 
@@ -1509,7 +1634,7 @@ static void generic_linkage_vector_alternative(const t_index N,
 
   // Put the minimal distances into a heap structure to make the repeated
   // global minimum searches fast.
-  nn_distances.heapify(mindist);
+  nn_distances.heapify();
 
   // Main loop: We have N-1 merging steps.
   for (i=N; i<N+N_1; ++i) {
@@ -1579,6 +1704,9 @@ static void generic_linkage_vector_alternative(const t_index N,
       case METHOD_METR_MEDIAN:
         dist.merge_weighted(idx1, idx2, i);
         break;
+
+      default:
+        throw std::runtime_error("Invalid method.");
       }
 
       n_nghbr[i] = active_nodes.start;
@@ -1625,3 +1753,7 @@ static void generic_linkage_vector_alternative(const t_index N,
     }
   }
 }
+
+#if HAVE_VISIBILITY
+#pragma GCC visibility pop
+#endif

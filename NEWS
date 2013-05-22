@@ -118,3 +118,16 @@ Version 1.1.9, 03/15/2013
   • Compatibility fix for the MSVC compilers on Windows.
 
   • Simplified GIL release in the Python interface.
+
+Version 1.1.10, 05/22/2013
+
+  • Updated citation information (JSS paper).
+
+  • Suppress warnings where applicable. Compilation with GCC should
+    not produce any warning at all, even if all compiler warnings
+    are enabled. (The switch -pedantic still does not work, but this
+    is due to the Python headers.)
+
+  • Optimization: Hidden symbols. Only the interface functions are
+    exported to the symbol table with GCC.
+

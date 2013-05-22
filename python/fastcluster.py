@@ -7,7 +7,7 @@ Copyright © 2011 Daniel Müllner
 This module provides fast hierarchical clustering routines. The "linkage"
 method is designed to provide a replacement for the “linkage” function and
 its siblings in the scipy.cluster.hierarchy module. You may use the methods
-in this module with the same syntax as the corresponding SciPy functions,
+in this module with the same syntax as the corresponding SciPy functions but
 with the benefit of much faster performance.
 
 The method "linkage_vector" performs clustering of vector data with memory-
@@ -19,7 +19,7 @@ also be obtained at <http://math.stanford.edu/~muellner/fastcluster.html>.
 """
 
 __all__ = ['single', 'complete', 'average', 'weighted', 'ward', 'centroid', 'median', 'linkage', 'linkage_vector']
-__version_info__ = ('1', '1', '9')
+__version_info__ = ('1', '1', '10')
 __version__ = '.'.join(__version_info__)
 
 from numpy import double, empty, array, ndarray, var, cov, dot, bool, \

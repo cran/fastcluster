@@ -13,8 +13,32 @@
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
+#if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 6))
+#define HAVE_DIAGNOSTIC 1
+#endif
+
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wpadded"
+#pragma GCC diagnostic ignored "-Wlong-long"
+#pragma GCC diagnostic ignored "-Wformat"
+#endif
 #include <Python.h>
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wlong-long"
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wpadded"
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
 #include <numpy/arrayobject.h>
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
 
 /* It's complicated, but if I do not include the C++ math headers, GCC
    will complain about conversions from 'double' to 'float', whenever 'isnan'
@@ -24,6 +48,7 @@
 */
 //#include <cmath>
 #define fc_isnan(X) ((X)!=(X))
+
 // There is Py_IS_NAN but it is so much slower on my x86_64 system with GCC!
 
 #include <limits> // for std::numeric_limits<...>::infinity()
@@ -35,6 +60,16 @@
 #define NPY_ARRAY_CARRAY_RO NPY_CARRAY_RO
 #endif
 
+/* Since the public interface is given by the Python respectively R interface,
+ * we do not want other symbols than the interface initalization routines to be
+ * visible in the shared object file. The "visibility" switch is a GCC concept.
+ * Hiding symbols keeps the relocation table small and decreases startup time.
+ * See http://gcc.gnu.org/wiki/Visibility
+ */
+#if HAVE_VISIBILITY
+#pragma GCC visibility push(hidden)
+#endif
+
 /*
   Convenience class for the output array: automatic counter.
 */
@@ -43,9 +78,9 @@ private:
   t_float * Z;
 
 public:
-  linkage_output(t_float * const Z) {
-    this->Z = Z;
-  }
+  linkage_output(t_float * const Z_)
+    : Z(Z_)
+  {}
 
   void append(const t_index node1, const t_index node2, const t_float dist,
               const t_float size) {
@@ -76,10 +111,9 @@ template <const bool sorted>
 static void generate_SciPy_dendrogram(t_float * const Z, cluster_result & Z2, const t_index N) {
   // The array "nodes" is a union-find data structure for the cluster
   // identities (only needed for unsorted cluster_result input).
-  union_find nodes;
+  union_find nodes(sorted ? 0 : N);
   if (!sorted) {
     std::stable_sort(Z2[0], Z2[N-1]);
-    nodes.init(N);
   }
 
   linkage_output output(Z);
@@ -111,11 +145,10 @@ static PyObject * linkage_vector_wrap(PyObject * const self, PyObject * const ar
 
 // List the C++ methods that this extension provides.
 static PyMethodDef _fastclusterWrapMethods[] = {
-  {"linkage_wrap", linkage_wrap, METH_VARARGS},
-  {"linkage_vector_wrap", linkage_vector_wrap, METH_VARARGS},
-  {NULL, NULL, 0, NULL}     /* Sentinel - marks the end of this structure */
+  {"linkage_wrap", linkage_wrap, METH_VARARGS, NULL},
+  {"linkage_vector_wrap", linkage_vector_wrap, METH_VARARGS, NULL},
+  {NULL, NULL, 0, NULL}    /* Sentinel - marks the end of this structure */
 };
-
 
 /* Tell Python about these methods.
 
@@ -129,8 +162,16 @@ static struct PyModuleDef fastclustermodule = {
   NULL, // no module documentation
   -1,  /* size of per-interpreter state of the module,
           or -1 if the module keeps state in global variables. */
-  _fastclusterWrapMethods
+  _fastclusterWrapMethods,
+  NULL, NULL, NULL, NULL
 };
+
+/* Make the interface initalization routines visible in the shared object
+ * file.
+ */
+#if HAVE_VISIBILITY
+#pragma GCC visibility push(default)
+#endif
 
 PyMODINIT_FUNC PyInit__fastcluster(void) {
   PyObject * m;
@@ -142,17 +183,33 @@ PyMODINIT_FUNC PyInit__fastcluster(void) {
   return m;
 }
 
+#if HAVE_VISIBILITY
+#pragma GCC visibility pop
+#endif
+
 # else // Python 2.x
+
+#if HAVE_VISIBILITY
+#pragma GCC visibility push(default)
+#endif
 
 PyMODINIT_FUNC init_fastcluster(void)  {
   (void) Py_InitModule("_fastcluster", _fastclusterWrapMethods);
   import_array();  // Must be present for NumPy. Called first after above line.
 }
 
+#if HAVE_VISIBILITY
+#pragma GCC visibility pop
+#endif
+
 #endif // PY_VERSION
 
 class GIL_release
   {
+  private:
+    // noncopyable
+    GIL_release(GIL_release const &);
+    GIL_release & operator=(GIL_release const &);
   public:
     inline
     GIL_release(bool really = true)
@@ -176,12 +233,16 @@ class GIL_release
   The input is a dissimilarity matrix.
 */
 
-static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
+static PyObject *linkage_wrap(PyObject * const, PyObject * const args) {
   PyArrayObject * D, * Z;
   long int N_ = 0;
   unsigned char method;
 
   try{
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
     // Parse the input arguments
     if (!PyArg_ParseTuple(args, "lO!O!b",
                           &N_,                // signed long integer
@@ -190,6 +251,9 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
                           &method)) {        // unsigned char
       return NULL; // Error if the arguments have the wrong type.
     }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
     if (N_ < 1 ) {
       // N must be at least 1.
       PyErr_SetString(PyExc_ValueError,
@@ -307,7 +371,14 @@ static PyObject *linkage_wrap(PyObject * const self, PyObject * const args) {
                     "C++ exception (unknown reason). Please send a bug report.");
     return NULL;
   }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
   Py_RETURN_NONE;
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
 }
 
 /*
@@ -354,9 +425,9 @@ class pythonerror {};
 class python_dissimilarity {
 private:
   t_float * Xa;
-  auto_array_ptr<t_float> Xnew;
   std::ptrdiff_t dim; // size_t saves many statis_cast<> in products
   t_index N;
+  auto_array_ptr<t_float> Xnew;
   t_index * members;
   void (cluster_result::*postprocessfn) (const t_float) const;
   t_float postprocessarg;
@@ -373,9 +444,20 @@ private:
   PyArrayObject * V;
   const t_float * V_data;
 
+  // noncopyable
+  python_dissimilarity();
+  python_dissimilarity(python_dissimilarity const &);
+  python_dissimilarity & operator=(python_dissimilarity const &);
+
 public:
+  // Ignore warning about uninitialized member variables. I know what I am
+  // doing here, and some member variables are only used for certain metrics.
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Weffc++"
+#endif
   python_dissimilarity (PyArrayObject * const Xarg,
-                        t_index * const members,
+                        t_index * const members_,
                         const unsigned char method,
                         const unsigned char metric,
                         PyObject * const extraarg,
@@ -383,7 +465,8 @@ public:
     : Xa(reinterpret_cast<t_float *>(PyArray_DATA(Xarg))),
       dim(PyArray_DIM(Xarg, 1)),
       N(static_cast<t_index>(PyArray_DIM(Xarg, 0))),
-      members(members),
+      Xnew(temp_point_array ? (N-1)*dim : 0),
+      members(members_),
       postprocessfn(NULL),
       V(NULL)
   {
@@ -400,11 +483,18 @@ public:
               "The 'seuclidean' metric needs a variance parameter.");
           throw pythonerror();
         }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
         V = reinterpret_cast<PyArrayObject *>(PyArray_FromAny(extraarg,
                 PyArray_DescrFromType(NPY_DOUBLE),
                 1, 1,
                 NPY_ARRAY_CARRAY_RO,
                 NULL));
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
         if (PyErr_Occurred()) {
           throw pythonerror();
         }
@@ -462,11 +552,18 @@ public:
             "The 'mahalanobis' metric needs a parameter for the inverse covariance.");
           throw pythonerror();
         }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
         V = reinterpret_cast<PyArrayObject *>(PyArray_FromAny(extraarg,
               PyArray_DescrFromType(NPY_DOUBLE),
               2, 2,
               NPY_ARRAY_CARRAY_RO,
               NULL));
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
         if (PyErr_Occurred()) {
           throw pythonerror();
         }
@@ -530,14 +627,20 @@ public:
     default:
       postprocessfn = &cluster_result::sqrt;
     }
-
-    if (temp_point_array) {
-      Xnew.init((N-1)*dim);
-    }
   }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
 
   ~python_dissimilarity() {
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
     Py_XDECREF(V);
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
   }
 
   inline t_float operator () (const t_index i, const t_index j) const {
@@ -645,7 +748,14 @@ public:
       sum += diff*diff;
     }
     if (check_NaN) {
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
       if (fc_isnan(sum))
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
         throw(nan_error());
     }
     return sum;
@@ -659,8 +769,15 @@ public:
       t_float diff = Pi[k] - Pj[k];
       sum += diff*diff;
     }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
     if (fc_isnan(sum))
       throw(nan_error());
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
     return sum;
   }
 
@@ -676,6 +793,10 @@ private:
       throw pythonerror();
     }
 
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
     if (postprocessarg==std::numeric_limits<t_float>::infinity()) {
       set_chebychev();
     }
@@ -689,6 +810,9 @@ private:
       distfn = &python_dissimilarity::minkowski;
       postprocessfn = &cluster_result::power;
     }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
   }
 
   void set_euclidean() {
@@ -751,7 +875,14 @@ private:
   t_float hamming(const t_index i, const t_index j) const {
     t_float sum = 0;
     for (t_index k=0; k<dim; ++k) {
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
       sum += (X(i,k)!=X(j,k));
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
     }
     return sum;
   }
@@ -762,8 +893,15 @@ private:
     t_index sum1 = 0;
     t_index sum2 = 0;
     for (t_index k=0; k<dim; ++k) {
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
       sum1 += (X(i,k)!=X(j,k));
       sum2 += ((X(i,k)!=0) || (X(j,k)!=0));
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
     }
     return sum1==0 ? 0 : static_cast<t_float>(sum1) / static_cast<t_float>(sum2);
   }
@@ -772,22 +910,43 @@ private:
     t_float sum = 0;
     for (t_index k=0; k<dim; ++k) {
       t_float numerator = fabs(X(i,k)-X(j,k));
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
       sum += numerator==0 ? 0 : numerator / (fabs(X(i,k)) + fabs(X(j,k)));
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
     }
     return sum;
   }
 
   t_float user(const t_index i, const t_index j) const {
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
     PyObject * u = PySequence_ITEM(X_Python, i);
     PyObject * v = PySequence_ITEM(X_Python, j);
     PyObject * result = PyObject_CallFunctionObjArgs(userfn, u, v, NULL);
     Py_DECREF(u);
     Py_DECREF(v);
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
     if (result==NULL) {
       throw pythonerror();
     }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
     const t_float C_result = PyFloat_AsDouble(result);
     Py_DECREF(result);
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
     if (PyErr_Occurred()) {
       throw pythonerror();
     }
@@ -904,13 +1063,17 @@ private:
   }
 };
 
-static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const args) {
+static PyObject *linkage_vector_wrap(PyObject * const, PyObject * const args) {
   PyArrayObject * X, * Z;
   unsigned char method, metric;
   PyObject * extraarg;
 
   try{
     // Parse the input arguments
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
     if (!PyArg_ParseTuple(args, "O!O!bbO",
                           &PyArray_Type, &X, // NumPy array
                           &PyArray_Type, &Z, // NumPy array
@@ -919,6 +1082,9 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
                           &extraarg )) {     // Python object
       return NULL;
     }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
 
     if (PyArray_NDIM(X) != 2) {
       PyErr_SetString(PyExc_ValueError,
@@ -1060,5 +1226,16 @@ static PyObject *linkage_vector_wrap(PyObject * const self, PyObject * const arg
                     "C++ exception (unknown reason). Please send a bug report.");
     return NULL;
   }
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
   Py_RETURN_NONE;
+#if HAVE_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
 }
+
+#if HAVE_VISIBILITY
+#pragma GCC visibility pop
+#endif
