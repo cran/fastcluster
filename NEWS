@@ -131,3 +131,6 @@ Version 1.1.10, 05/22/2013
   • Optimization: Hidden symbols. Only the interface functions are
     exported to the symbol table with GCC.
 
+Version 1.1.11, 05/23/2013
+
+  • Compatibility fix for Solaris.

@@ -19,7 +19,7 @@ also be obtained at <http://math.stanford.edu/~muellner/fastcluster.html>.
 """
 
 __all__ = ['single', 'complete', 'average', 'weighted', 'ward', 'centroid', 'median', 'linkage', 'linkage_vector']
-__version_info__ = ('1', '1', '10')
+__version_info__ = ('1', '1', '11')
 __version__ = '.'.join(__version_info__)
 
 from numpy import double, empty, array, ndarray, var, cov, dot, bool, \

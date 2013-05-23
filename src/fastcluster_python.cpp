@@ -51,7 +51,11 @@
 
 // There is Py_IS_NAN but it is so much slower on my x86_64 system with GCC!
 
+#include <cstddef> // for std::ptrdiff_t
 #include <limits> // for std::numeric_limits<...>::infinity()
+#include <algorithm> // for std::stable_sort
+#include <new> // for std::bad_alloc
+#include <exception> // for std::exception
 
 #include "fastcluster.cpp"
 

@@ -35,8 +35,11 @@
   exception if a NaN distance value occurs.
 */
 
-#include <algorithm>
-#include <stdexcept>
+#include <cstddef> // for std::ptrdiff_t
+#include <limits> // for std::numeric_limits<...>::infinity()
+#include <algorithm> // for std::fill_n
+#include <stdexcept> // for std::runtime_error
+#include <string> // for std::string
 
 // Microsoft Visual Studio does not have fenv.h
 #ifdef _MSC_VER
@@ -722,7 +725,7 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
       break;
 
     default:
-      throw std::runtime_error("Invalid method.");
+      throw std::runtime_error(std::string("Invalid method."));
     }
   }
   #ifdef FE_INVALID
@@ -1293,7 +1296,7 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
     }
 
     default:
-      throw std::runtime_error("Invalid method.");
+      throw std::runtime_error(std::string("Invalid method."));
     }
   }
   #ifdef FE_INVALID
@@ -1495,7 +1498,7 @@ static void generic_linkage_vector(const t_index N,
       dist.merge_inplace_weighted(idx1, idx2);
       break;
     default:
-      throw std::runtime_error("Invalid method.");
+      throw std::runtime_error(std::string("Invalid method."));
     }
 
     // Index idx2 now represents the new (merged) node with label N+i.
@@ -1706,7 +1709,7 @@ static void generic_linkage_vector_alternative(const t_index N,
         break;
 
       default:
-        throw std::runtime_error("Invalid method.");
+        throw std::runtime_error(std::string("Invalid method."));
       }
 
       n_nghbr[i] = active_nodes.start;

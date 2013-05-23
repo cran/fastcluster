@@ -43,21 +43,41 @@ in your user directories. See this help page for example:
 
 Installation for Python
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-Make sure that you have Python and NumPy installed. If you have not done so
-already, download the fastcluster package from the R archive here:
+Make sure that you have both Python and NumPy installed.
 
-    http://cran.r-project.org/web/packages/fastcluster/
+
+1. With setuptools
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+If setuptools are installed, type
+
+    easy_install --upgrade --user fastcluster
+
+in a terminal, which automatically downloads the latest version from PyPI,
+compiles the C++ library and installs the package for a single user without
+administrator rights.
+
+If you cannot make this work, use method 2. Also, this method gives you
+access to all accompanying information, in particular the documentation in
+docs/fastcluster.pdf. Moreover, it installs (insignificantly) fewer files.
+
+
+2. Without setuptools
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+If you have not done so already, download the fastcluster package from PyPI
+here:
+
+    http://pypi.python.org/pypi/fastcluster/
 
 Open a terminal, go to the directory with the downloaded file and extract the
 contents of the archive with:
 
-    tar -xvf fastcluster_(version).tar.gz
+    tar -xvf fastcluster-(version).tar.gz
 
 Alternatively, use your favorite archive manager for unpacking, eg. on
-Windows. This will generate a new directory “fastcluster”. Switch to its
-“python” subdirectory:
+Windows. This will generate a new directory “fastcluster-(version)”. Switch to
+this subdirectory:
 
-    cd fastcluster/python/
+    cd fastcluster-(...)
 
 Now compile and install the Python module by:
 
@@ -73,3 +93,9 @@ chapter “Installing Python modules” in the Python documentation for further
 help:
 
     http://docs.python.org/install/index.html
+
+3. Microsoft Windows
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+Christoph Gohlke provides installation files for Windows on his web page:
+
+    http://www.lfd.uci.edu/~gohlke/pythonlibs/#fastcluster

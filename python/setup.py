@@ -43,8 +43,21 @@ Part of this module is intended to replace the functions
 in the module scipy.cluster.hierarchy with the same functionality but much faster algorithms. Moreover, the function 'linkage_vector' provides memory-efficient clustering for vector data.
 
 The interface is very similar to MATLAB's Statistics Toolbox API to make code easier to port from MATLAB to Python/Numpy. The core implementation of this library is in C++ for efficiency.
+
+Installation files for Windows are provided by Christoph Gohlke on his `web page <http://www.lfd.uci.edu/~gohlke/pythonlibs/#fastcluster>`_.
+
+**The fastcluster package is considered stable and will undergo few changes
+from now on. If some years from now there have not been any updates, this
+does not necessarily mean that the package is unmaintained but maybe it just
+was not necessary to correct anything. Of course, please still report potential
+bugs and incompatibilities to muellner@math.stanford.edu.**
+
+Reference: Daniel Müllner, *fastcluster: Fast Hierarchical, Agglomerative
+Clustering Routines for R and Python*, Journal of Statistical Software, **53**
+(2013), no. 9, 1–18, http://www.jstatsoft.org/v53/i09/.
 """,
       requires=['numpy'],
+      provides=['fastcluster'],
       ext_modules=[Extension('_fastcluster',
                              ['../src/fastcluster_python.cpp'],
                   # Feel free to uncomment the line below if you use the GCC.
@@ -79,6 +92,7 @@ The interface is very similar to MATLAB's Statistics Toolbox API to make code ea
                      "Programming Language :: C++",
                      "Operating System :: OS Independent",
                      "License :: OSI Approved :: BSD License",
+                     "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
                      "Intended Audience :: Science/Research",
                      "Development Status :: 5 - Production/Stable"],
       url = 'http://math.stanford.edu/~muellner',

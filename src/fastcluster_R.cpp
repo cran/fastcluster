@@ -23,7 +23,13 @@
 #define fc_isnan(X) ((X)!=(X))
 // There is ISNAN but it is so much slower on my x86_64 system with GCC!
 
+#include <cstddef> // for std::ptrdiff_t
 #include <limits> // for std::numeric_limits<...>::infinity()
+#include <algorithm> // for std::stable_sort
+#include <stdexcept> // for std::runtime_error
+#include <string> // for std::string
+#include <new> // for std::bad_alloc
+#include <exception> // for std::exception
 
 #include "fastcluster.cpp"
 
@@ -242,7 +248,7 @@ public:
         postprocessfn = &cluster_result::power;
         break;
       default:
-        throw std::runtime_error("Invalid method.");
+        throw std::runtime_error(std::string("Invalid method."));
       }
       break;
 
@@ -655,7 +661,7 @@ extern "C" {
         generic_linkage<METHOD_METR_MEDIAN, t_float>(N, D__, NULL, Z2);
         break;
       default:
-        throw std::runtime_error("Invalid method.");
+        throw std::runtime_error(std::string("Invalid method."));
       }
 
       D__.free();     // Free the memory now
@@ -848,7 +854,7 @@ extern "C" {
         break;
 
       default:
-        throw std::runtime_error("Invalid method.");
+        throw std::runtime_error(std::string("Invalid method."));
       }
 
       X.free();     // Free the memory now
