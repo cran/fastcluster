@@ -37,10 +37,10 @@ source distribution.
     \item JSS paper: \url{http://www.jstatsoft.org/v53/i09/}.
 
     \item See the author's home page for a performance comparison:
-  \url{http://math.stanford.edu/~muellner/fastcluster.html}.
+  \url{http://danifold.net/fastcluster.html}.
     }
 }
-\references{\url{http://math.stanford.edu/~muellner}}
+\references{\url{http://danifold.net}}
 \author{Daniel Müllner}
 \seealso{\code{\link{hclust}}, \code{\link{hclust.vector}}}
 \examples{# Taken and modified from stats::hclust

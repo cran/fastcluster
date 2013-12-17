@@ -2,7 +2,7 @@
   fastcluster: Fast hierarchical clustering routines for R and Python
 
   Copyright © 2011 Daniel Müllner
-  <http://math.stanford.edu/~muellner>
+  <http://danifold.net>
 */
 #if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 6))
 #define HAVE_DIAGNOSTIC 1

@@ -2,7 +2,7 @@
   fastcluster: Fast hierarchical clustering routines for R and Python
 
   Copyright © 2011 Daniel Müllner
-  <http://math.stanford.edu/~muellner>
+  <http://danifold.net>
 */
 
 // for INT32_MAX in fastcluster.cpp

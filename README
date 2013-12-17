@@ -1,7 +1,7 @@
-fastcluster: Fast hierarchical clustering routines for R and Python
+﻿fastcluster: Fast hierarchical clustering routines for R and Python
 
 Copyright © 2011 Daniel Müllner
-<http://math.stanford.edu/~muellner>
+<http://danifold.net>
 
 The fastcluster package is a C++ library for hierarchical, agglomerative
 clustering. It efficiently implements the seven most widely used clustering
@@ -15,7 +15,7 @@ uses hierarchical clustering can benefit immediately and effortlessly from the
 performance gain. Moreover, there are memory-saving routines for clustering of
 vector data, which go beyond what the existing packages provide.
 
-See the author's home page <http://math.stanford.edu/~muellner> for more
+See the author's home page <http://danifold.net> for more
 information, in particular a performance comparison with other clustering
 packages. The User's manual is the file inst/doc/fastcluster.pdf in the
 source distribution.

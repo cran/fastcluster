@@ -1,7 +1,7 @@
-fastcluster: Fast hierarchical clustering routines for R and Python
+﻿fastcluster: Fast hierarchical clustering routines for R and Python
 
 Copyright © 2011 Daniel Müllner
-<http://math.stanford.edu/~muellner>
+<http://danifold.net>
 
 
 Version history
@@ -134,3 +134,12 @@ Version 1.1.10, 05/22/2013
 Version 1.1.11, 05/23/2013
 
   • Compatibility fix for Solaris.
+
+Version 1.1.12, 12/10/2013
+
+  • Tiny maintenance updates: new author web page and e-mail address,
+    new location for R vignette.
+
+Version 1.1.13, 12/17/2013
+
+  • Moved the python directory due to CRAN requirements.

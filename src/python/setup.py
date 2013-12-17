@@ -15,7 +15,7 @@ u('''
   fastcluster: Fast hierarchical clustering routines for R and Python
 
   Copyright © 2011 Daniel Müllner
-  <http://math.stanford.edu/~muellner>
+  <http://danifold.net>
 ''')
 #import distutils.debug
 #distutils.debug.DEBUG = 'yes'
@@ -33,7 +33,7 @@ setup(name='fastcluster', \
       version=version, \
       py_modules=['fastcluster'], \
       description='Fast hierarchical clustering routines for R and Python.', \
-      long_description="""
+      long_description=u("""
 This library provides Python functions for hierarchical clustering. It generates hierarchical clusters from distance matrices or from vector data.
 
 Part of this module is intended to replace the functions
@@ -50,16 +50,16 @@ Installation files for Windows are provided by Christoph Gohlke on his `web page
 from now on. If some years from now there have not been any updates, this
 does not necessarily mean that the package is unmaintained but maybe it just
 was not necessary to correct anything. Of course, please still report potential
-bugs and incompatibilities to muellner@math.stanford.edu.**
+bugs and incompatibilities to daniel@danifold.net.**
 
 Reference: Daniel Müllner, *fastcluster: Fast Hierarchical, Agglomerative
 Clustering Routines for R and Python*, Journal of Statistical Software, **53**
 (2013), no. 9, 1–18, http://www.jstatsoft.org/v53/i09/.
-""",
+"""),
       requires=['numpy'],
       provides=['fastcluster'],
       ext_modules=[Extension('_fastcluster',
-                             ['../src/fastcluster_python.cpp'],
+                             ['../fastcluster_python.cpp'],
                   # Feel free to uncomment the line below if you use the GCC.
                   # This switches to more aggressive optimization and turns
                   # more warning switches on. No warning should appear in
@@ -80,7 +80,7 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
      )],
       keywords=['dendrogram', 'linkage', 'cluster', 'agglomerative', 'hierarchical', 'hierarchy', 'ward'],
       author=u("Daniel Müllner"),
-      author_email="muellner@math.stanford.edu",
+      author_email="daniel@danifold.net",
       license="BSD <http://opensource.org/licenses/BSD-2-Clause>",
       classifiers = ["Topic :: Scientific/Engineering :: Information Analysis",
                      "Topic :: Scientific/Engineering :: Artificial Intelligence",
@@ -95,5 +95,5 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
                      "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
                      "Intended Audience :: Science/Research",
                      "Development Status :: 5 - Production/Stable"],
-      url = 'http://math.stanford.edu/~muellner',
+      url = 'http://danifold.net',
       )

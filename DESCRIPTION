@@ -1,30 +1,27 @@
 Package: fastcluster
 Encoding: UTF-8
 Type: Package
-Version: 1.1.11
-Date: 2013-05-23
+Version: 1.1.13
+Date: 2013-12-17
 Title: Fast hierarchical clustering routines for R and Python
 Authors@R: person("Daniel", "Müllner", email =
-        "muellner@math.stanford.edu", role = c("aut", "cph", "cre"))
-Author: Daniel Müllner, http://math.stanford.edu/~muellner
-Maintainer: Daniel Müllner <muellner@math.stanford.edu>
+        "daniel@danifold.net", role = c("aut", "cph", "cre"))
+Author: Daniel Müllner, http://danifold.net
+Maintainer: Daniel Müllner <daniel@danifold.net>
 Enhances: stats, flashClust
 Description: This is a two-in-one package which provides interfaces to
-        both R and Python. It implements fast hierarchical,
-        agglomerative clustering routines. Part of the functionality is
-        designed as drop-in replacement for existing routines:
-        “linkage” in the SciPy package “scipy.cluster.hierarchy”,
-        “hclust” in R's “stats” package, and the “flashClust” package.
-        It provides the same functionality with the benefit of a much
-        faster implementation. Moreover, there are memory-saving
-        routines for clustering of vector data, which go beyond what
-        the existing packages provide. For information on how to
-        install the Python files, see the file INSTALL in the source
-        distribution.
+        both R and Python. It implements fast hierarchical, agglomerative
+        clustering routines. Part of the functionality is designed as drop-in
+        replacement for existing routines: “linkage” in the SciPy package
+        “scipy.cluster.hierarchy”, “hclust” in R's “stats” package, and the
+        “flashClust” package. It provides the same functionality with the
+        benefit of a much faster implementation. Moreover, there are
+        memory-saving routines for clustering of vector data, which go beyond
+        what the existing packages provide. For information on how to install
+        the Python files, see the file INSTALL in the source distribution.
 License: FreeBSD | GPL-2 | file LICENSE
-URL: http://math.stanford.edu/~muellner/fastcluster.html
-BuildVignettes: False
-Packaged: 2013-05-23 23:13:18 UTC; muellner
+URL: http://danifold.net/fastcluster.html
+Packaged: 2013-12-17 08:20:14 UTC; muellner
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2013-05-24 01:24:06
+Date/Publication: 2013-12-17 11:08:18

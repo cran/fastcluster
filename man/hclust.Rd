@@ -21,7 +21,7 @@ This function implements hierarchical clustering with the same interface as \cod
    A comprehensive User's manual
     \href{http://cran.r-project.org/web/packages/fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf} is available as a vignette. Get this from the R command line with \code{vignette('fastcluster')}.
 }
-\references{\url{http://math.stanford.edu/~muellner}}
+\references{\url{http://danifold.net}}
 \author{Daniel Müllner}
 \seealso{\code{\link{fastcluster}}, \code{\link{hclust.vector}}, \code{\link[stats:hclust]{stats::hclust}}} 
 \examples{# Taken and modified from stats::hclust

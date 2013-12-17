@@ -11,7 +11,7 @@ else:
         return x
 print(u('''Test program for the 'fastcluster' package.
 
-Copyright (c) 2011 Daniel Müllner, <http://math.stanford.edu/~muellner>
+Copyright (c) 2011 Daniel Müllner, <http://danifold.net>
 
 If everything is OK, the test program will run forever, without an error
 message.

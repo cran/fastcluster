@@ -1,14 +1,14 @@
-fastcluster: Fast hierarchical clustering routines for R and Python
+﻿fastcluster: Fast hierarchical clustering routines for R and Python
 
 Copyright © 2011 Daniel Müllner
-<http://math.stanford.edu/~muellner>
+<http://danifold.net>
 
 
 Installation
 ‾‾‾‾‾‾‾‾‾‾‾‾
 Installation procedures were tested under 64-bit Ubuntu. CRAN also hosts
 precompiled binaries (of the R library, not the Python module) for Windows and
-MacOS X. In principle, it should be possible to install the fastcluster package
+OS X. In principle, it should be possible to install the fastcluster package
 on any system that has a C++ compiler and R respectively Python with NumPy.
 There are no unusual libraries needed to compile the package, only the STL
 library, which every C++ compiler should have by default.
@@ -46,8 +46,15 @@ Installation for Python
 Make sure that you have both Python and NumPy installed.
 
 
-1. With setuptools
-‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+1. Microsoft Windows
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+Christoph Gohlke provides installation files for Windows on his web page:
+
+    http://www.lfd.uci.edu/~gohlke/pythonlibs/#fastcluster
+
+
+2. Other operating systems, with setuptools
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 If setuptools are installed, type
 
     easy_install --upgrade --user fastcluster
@@ -56,12 +63,12 @@ in a terminal, which automatically downloads the latest version from PyPI,
 compiles the C++ library and installs the package for a single user without
 administrator rights.
 
-If you cannot make this work, use method 2. Also, this method gives you
+If you cannot make this work, use method 3. Also, this method gives you
 access to all accompanying information, in particular the documentation in
 docs/fastcluster.pdf. Moreover, it installs (insignificantly) fewer files.
 
 
-2. Without setuptools
+3. Without setuptools
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 If you have not done so already, download the fastcluster package from PyPI
 here:
@@ -79,23 +86,19 @@ this subdirectory:
 
     cd fastcluster-(...)
 
+The source distribution on CRAN also contains the complete source files. See
+the directory src/python there.
+
 Now compile and install the Python module by:
 
     python setup.py install
 
 You may need to precede this command with sudo or install the package in your
-home directory. For example, the line
+home directory, like this:
 
     python setup.py install --user
 
-installs the package in the path lib/python/ under your home directory. See the
-chapter “Installing Python modules” in the Python documentation for further
-help:
+See the chapter “Installing Python modules” in the Python documentation for
+further help:
 
     http://docs.python.org/install/index.html
-
-3. Microsoft Windows
-‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-Christoph Gohlke provides installation files for Windows on his web page:
-
-    http://www.lfd.uci.edu/~gohlke/pythonlibs/#fastcluster
