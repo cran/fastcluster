@@ -10,7 +10,7 @@ This function implements hierarchical clustering with the same interface as \cod
 \item{method}{the agglomeration method to be used. This must be (an
   unambiguous abbreviation of) one of \code{"single"},
   \code{"complete"}, \code{"average"}, \code{"mcquitty"},
-  \code{"ward"}, \code{"centroid"} or \code{"median"}.}
+  \code{"ward.D"}, \code{"ward.D2"}, \code{"centroid"} or \code{"median"}.}
 \item{members}{\code{NULL} or a vector with length the number of
   observations.}
 }
@@ -21,9 +21,9 @@ This function implements hierarchical clustering with the same interface as \cod
    A comprehensive User's manual
     \href{http://cran.r-project.org/web/packages/fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf} is available as a vignette. Get this from the R command line with \code{vignette('fastcluster')}.
 }
-\references{\url{http://danifold.net}}
+\references{\url{http://danifold.net/fastcluster.html}}
 \author{Daniel Müllner}
-\seealso{\code{\link{fastcluster}}, \code{\link{hclust.vector}}, \code{\link[stats:hclust]{stats::hclust}}} 
+\seealso{\code{\link{fastcluster}}, \code{\link{hclust.vector}}, \code{\link[stats:hclust]{stats::hclust}}}
 \examples{# Taken and modified from stats::hclust
 #
 # hclust(...)        # new method

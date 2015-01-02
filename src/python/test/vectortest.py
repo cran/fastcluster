@@ -22,6 +22,10 @@ from scipy.spatial.distance import pdist, squareform
 import math
 import sys
 
+version = '1.1.14'
+if fc.__version__ != version:
+    raise ValueError('Wrong module version: {} instead of {}.'.format(fc.__version__, version))
+
 import atexit
 def print_seed():
   print("Seed: {0}".format(seed))

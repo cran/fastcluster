@@ -108,6 +108,11 @@ typedef int_fast32_t t_index;
 #endif
 typedef double t_float;
 
+/* Method codes.
+
+   These codes must agree with the METHODS array in fastcluster.R and the
+   dictionary mthidx in fastcluster.py.
+*/
 enum method_codes {
   // non-Euclidean methods
   METHOD_METR_SINGLE           = 0,
@@ -115,11 +120,16 @@ enum method_codes {
   METHOD_METR_AVERAGE          = 2,
   METHOD_METR_WEIGHTED         = 3,
   METHOD_METR_WARD             = 4,
+  METHOD_METR_WARD_D           = METHOD_METR_WARD,
   METHOD_METR_CENTROID         = 5,
-  METHOD_METR_MEDIAN           = 6
+  METHOD_METR_MEDIAN           = 6,
+  METHOD_METR_WARD_D2          = 7,
+
+  MIN_METHOD_CODE              = 0,
+  MAX_METHOD_CODE              = 7
 };
 
-enum {
+enum method_codes_vector {
   // Euclidean methods
   METHOD_VECTOR_SINGLE         = 0,
   METHOD_VECTOR_WARD           = 1,
@@ -528,7 +538,7 @@ inline static void f_median( t_float * const b, const t_float a, const t_float c
   #endif
 }
 
-template <const unsigned char method, typename t_members>
+template <method_codes method, typename t_members>
 static void NN_chain_core(const t_index N, t_float * const D, t_members * const members, cluster_result & Z2) {
 /*
     N: integer
@@ -894,7 +904,7 @@ private:
 
 };
 
-template <const unsigned char method, typename t_members>
+template <method_codes method, typename t_members>
 static void generic_linkage(const t_index N, t_float * const D, t_members * const members, cluster_result & Z2) {
   /*
     N: integer, number of data points
@@ -1381,7 +1391,7 @@ static void MST_linkage_core_vector(const t_index N,
   }
 }
 
-template <const unsigned char method, typename t_dissimilarity>
+template <method_codes_vector method, typename t_dissimilarity>
 static void generic_linkage_vector(const t_index N,
                                    t_dissimilarity & dist,
                                    cluster_result & Z2) {
@@ -1421,7 +1431,7 @@ static void generic_linkage_vector(const t_index N,
     for (idx=j=i+1; j<N; ++j) {
       t_float tmp;
       switch (method) {
-      case METHOD_METR_WARD:
+      case METHOD_VECTOR_WARD:
         tmp = dist.ward_initial(i,j);
         break;
       default:
@@ -1433,7 +1443,7 @@ static void generic_linkage_vector(const t_index N,
       }
     }
     switch (method) {
-    case METHOD_METR_WARD:
+    case METHOD_VECTOR_WARD:
       mindist[i] = t_dissimilarity::ward_initial_conversion(min);
       break;
     default:
@@ -1454,7 +1464,7 @@ static void generic_linkage_vector(const t_index N,
       // Recompute the minimum mindist[idx1] and n_nghbr[idx1].
       n_nghbr[idx1] = j = active_nodes.succ[idx1]; // exists, maximally N-1
       switch (method) {
-      case METHOD_METR_WARD:
+      case METHOD_VECTOR_WARD:
         min = dist.ward(idx1,j);
         for (j=active_nodes.succ[j]; j<N; j=active_nodes.succ[j]) {
           t_float const tmp = dist.ward(idx1,j);
@@ -1490,11 +1500,11 @@ static void generic_linkage_vector(const t_index N,
     Z2.append(node1, node2, mindist[idx1]);
 
     switch (method) {
-    case METHOD_METR_WARD:
-    case METHOD_METR_CENTROID:
+    case METHOD_VECTOR_WARD:
+    case METHOD_VECTOR_CENTROID:
       dist.merge_inplace(idx1, idx2);
       break;
-    case METHOD_METR_MEDIAN:
+    case METHOD_VECTOR_MEDIAN:
       dist.merge_inplace_weighted(idx1, idx2);
       break;
     default:
@@ -1508,7 +1518,7 @@ static void generic_linkage_vector(const t_index N,
 
     // Update the distance matrix
     switch (method) {
-    case METHOD_METR_WARD:
+    case METHOD_VECTOR_WARD:
       /*
         Ward linkage.
 
@@ -1580,7 +1590,7 @@ static void generic_linkage_vector(const t_index N,
   }
 }
 
-template <const unsigned char method, typename t_dissimilarity>
+template <method_codes_vector method, typename t_dissimilarity>
 static void generic_linkage_vector_alternative(const t_index N,
                                                t_dissimilarity & dist,
                                                cluster_result & Z2) {
@@ -1614,7 +1624,7 @@ static void generic_linkage_vector_alternative(const t_index N,
     for (idx=j=0; j<i; ++j) {
       t_float tmp;
       switch (method) {
-      case METHOD_METR_WARD:
+      case METHOD_VECTOR_WARD:
         tmp = dist.ward_initial(i,j);
         break;
       default:
@@ -1626,7 +1636,7 @@ static void generic_linkage_vector_alternative(const t_index N,
       }
     }
     switch (method) {
-    case METHOD_METR_WARD:
+    case METHOD_VECTOR_WARD:
       mindist[i] = t_dissimilarity::ward_initial_conversion(min);
       break;
     default:
@@ -1665,7 +1675,7 @@ static void generic_linkage_vector_alternative(const t_index N,
       // Recompute the minimum mindist[idx1] and n_nghbr[idx1].
       n_nghbr[idx1] = j = active_nodes.start;
       switch (method) {
-      case METHOD_METR_WARD:
+      case METHOD_VECTOR_WARD:
         min = dist.ward_extended(idx1,j);
         for (j=active_nodes.succ[j]; j<idx1; j=active_nodes.succ[j]) {
           t_float tmp = dist.ward_extended(idx1,j);
@@ -1699,12 +1709,12 @@ static void generic_linkage_vector_alternative(const t_index N,
 
     if (i<2*N_1) {
       switch (method) {
-      case METHOD_METR_WARD:
-      case METHOD_METR_CENTROID:
+      case METHOD_VECTOR_WARD:
+      case METHOD_VECTOR_CENTROID:
         dist.merge(idx1, idx2, i);
         break;
 
-      case METHOD_METR_MEDIAN:
+      case METHOD_VECTOR_MEDIAN:
         dist.merge_weighted(idx1, idx2, i);
         break;
 
@@ -1713,7 +1723,7 @@ static void generic_linkage_vector_alternative(const t_index N,
       }
 
       n_nghbr[i] = active_nodes.start;
-      if (method==METHOD_METR_WARD) {
+      if (method==METHOD_VECTOR_WARD) {
         /*
           Ward linkage.
 

@@ -1,4 +1,4 @@
-\def\fastclusterversion{1.1.13}
+\def\fastclusterversion{1.1.14}
 \documentclass[fontsize=10pt,paper=letter,BCOR=-6mm]{scrartcl}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
@@ -89,7 +89,7 @@
 %\VignetteIndexEntry{User's manual}
 \title{The \textit{fastcluster} package: User's manual}
 \author{\href{http://danifold.net}{Daniel Müllner}}
-\date{December 17, 2013}
+\date{January 2, 2015}
 \subtitle{Version \fastclusterversion}
 \maketitle
 
@@ -164,7 +164,7 @@ This method has the same specifications as the method \hclust{} in the package \
 
 The argument $d$ is a condensed distance matrix, as it is produced by \dist.
 
-The argument \textit{method} is one of the strings \textit{\q single\q}, \textit{\q complete\q}, \textit{\q average\q}, \textit{\q mcquitty\q}, \textit{\q centroid\q}, \textit{\q median\q}, \textit{\q ward\q}, or an unambiguous abbreviation thereof.
+The argument \textit{method} is one of the strings \textit{\q single\q}, \textit{\q complete\q}, \textit{\q average\q}, \textit{\q mcquitty\q}, \textit{\q centroid\q}, \textit{\q median\q}, \textit{\q ward.D\q}, \textit{\q ward.D2\q} or an unambiguous abbreviation thereof.
 
 The argument \textit{members} specifies the sizes of the initial nodes, ie.\ the number of observations in the initial clusters. The default value \texttt{NULL} says that all initial nodes are singletons, ie.\ have size 1. Otherwise, \textit{members} must be a vector whose size is the number of input points. The vector is processed as a \href{http://stat.ethz.ch/R-manual/R-patched/library/base/html/double.html}{\texttt{double}} array so that not only integer cardinalities of nodes can be accounted for but also weighted nodes with real weights.
 
@@ -255,7 +255,7 @@ Define the midpoint $\vec w_K$ of a cluster $K$ iteratively as $\vec w_K=k$ if $
 \]
 in Euclidean space for all nodes $A,B$. Notice however that this distance depends on the order of the merging steps.
 
-\item [\normalfont\textit{method=\q ward\q}:]
+\item [\normalfont\textit{method=\q ward.D\q}:]
 $\displaystyle d(K,L) = \frac{(|I|+|L|)\cdot d(I,L)+(|J|+|L|)\cdot d(J,L)-|L|\cdot d(I,J)}{|I|+|J|+|L|}$
 
 The global cluster dissimilarity can be expressed as
@@ -263,8 +263,13 @@ The global cluster dissimilarity can be expressed as
 d(A,B)=\frac{2|A||B|}{|A|+|B|}\cdot\|\vec c_A-\vec c_B\|^2,
 \]
 where $\vec c_A$ again denotes the centroid of the points in cluster $A$.
-\end{description}
 
+\item [\normalfont\textit{method=\q ward.D2\q}:]
+This is the equivalent of \textit{\q ward.D\q}, but for input consisting of untransformed (in particular: \textbf{non-squared}) Euclidean distances. Internally, all distances are squared first, then method \textit{ward.D} is applied, and finally the square root of all heights in the dendrogram is taken. Thus, global cluster dissimilarity can be expressed as the square root of that for \textit{ward.D}, namely
+\[
+d(A,B)=\sqrt{\frac{2|A||B|}{|A|+|B|}}\cdot\|\vec c_A-\vec c_B\|.
+\]
+\end{description}
 
 \item [\normalfont\texttt{\textbf{hclust.vector}}\,(\textit{X, method=\q single\q, members=NULL, metric=\q euclidean\q, p=NULL})]
 \phantomsection\label{hclust.vector}
@@ -277,7 +282,7 @@ The parameter \textit{\q members\q} is the same as for \hyperref[hclust]{\texttt
 
 The parameter \textit{\q method\q} is one of the strings \textit{\q single\q}, \textit{\q centroid\q}, \textit{\q median\q}, \textit{\q ward\q}, or an unambiguous abbreviation thereof.
 
-If \textit{method} is \textit{\q single\q}, single linkage clustering is performed on the data points with the metric which is specified by the \textit{metric} parameter. The choices are the same as in the \href{http://stat.ethz.ch/R-manual/R-patched/library/stats/html/dist.html}{\texttt{dist}} method: \textit{\q euclidean\q}, \textit{\q maximum\q}, \textit{\q manhattan\q}, \textit{\q canberra\q}, \textit{\q binary\q} and \textit{\q minkowski\q}. Any unambiguous substring can be given. The parameter \textit{p} is used for the \textit{\q minkowski\q} metric only.\pagebreak[2]
+If \textit{method} is \textit{\q single\q}, single linkage clustering is performed on the data points with the metric which is specified by the \textit{metric} parameter. The choices are the same as in the \href{http://stat.ethz.ch/R-manual/R-patched/library/stats/html/dist.html}{\texttt{dist}} method: \textit{\q euclidean\q}, \textit{\q maximum\q}, \textit{\q manhattan\q}, \textit{\q canberra\q}, \textit{\q binary\q} and \textit{\q minkowski\q}. Any unambiguous substring can be given. The parameter \textit{p} is used for the \textit{\q minkowski\q} metric only.
 
 The call
 \begin{quote}
@@ -292,16 +297,15 @@ but uses less memory and is equally fast. Ties may be resolved differently, ie.\
 If \textit{method} is one of \textit{\q centroid\q}, \textit{\q median\q}, \textit{\q ward\q}, clustering is performed with respect to Euclidean distances. In this case, the parameter \textit{metric} must be \textit{\q euclidean\q}. Notice that \texttt{hclust.vector} operates on Euclidean distances for compatibility reasons with the \dist{} method, while \hyperref[hclust]{\texttt{hclust}} assumes \textbf{squared} Euclidean distances for compatibility with the \href{http://stat.ethz.ch/R-manual/R-patched/library/stats/html/hclust.html}{\texttt{stats::hclust}} method! Hence, the call
 \phantomsection\label{squared}
 \begin{quote}
-\texttt{hc = hclust.vector(X, method=\q ward\q)}
+\texttt{hc = hclust.vector(X, method=\q centroid\q)}
 \end{quote}
 is, aside from the lesser memory requirements, equivalent to
 \begin{quote}
 \texttt{d = dist(X)}\\
-\texttt{hc = hclust(d\textasciicircum 2, method=\q ward\q)}\\
+\texttt{hc = hclust(d\textasciicircum 2, method=\q centroid\q)}\\
 \texttt{hc\$height = sqrt(hc\$height)}
 \end{quote}
-The same applies to the \textit{\q centroid\q} and  \textit{\q median\q} methods.
-Differences may arise only from the resolution of ties (which may, however, in extreme cases affect the entire clustering result due to the inherently unstable nature of the clustering schemes).
+The same applies to the \textit{\q median\q} method. The \textit{\q ward\q} method in \hyperref[hclust.vector]{\texttt{hclust.vector}} is equivalent to \hyperref[hclust]{\texttt{hclust}} with method \textit{\q ward.D2\q}, but to method \textit{\q ward.D\q} only after squaring as above. Differences in these algebraically equivalent methods may arise only from floating-point inaccuracies and the resolution of ties (which may, however, in extreme cases affect the entire clustering result due to the inherently unstable nature of the clustering schemes).
 \end{methods}
 \section{The Python interface}
 
@@ -426,7 +430,7 @@ There is a geometric interpretation: $d(A,B)$ is the distance between the centro
 \[
   d(A,B) = \|\vec c_A-\vec c_B\|,
 \]
-where $\vec c_A$ denotes the centroid of the points in cluster $A$.
+where $\vec c_A$ denotes the centroid of the points in cluster $A$.\pagebreak[2]
 
 \item [\normalfont\textit{method=\q median\q}:]
 $\displaystyle d(K,L) = \sqrt{\tfrac12 d(I,L)+\tfrac12 d(J,L)-\tfrac14 d(I,J)}$
@@ -631,7 +635,7 @@ Notice that when given a Boolean array, the \textit{matching} and \textit{hammin
 
 \section{Behavior for NaN and infinite values}\label{sec:infnan}
 
-Whenever the fastcluster package encounters a NaN value as the distance between nodes, either as the initial distance or as an updated distance after some merging steps, it raises an error. This was designed intentionally, even if there might be ways to propagate NaNs through the algorithms in a more or less sensible way. Indeed, since the clustering result depends on every single distance value, the presence of NaN values usually indicates a dubious clustering result, and therefore NaN values should be eliminated in preprocessing.
+Whenever the fastcluster package encounters a NaN value as the distance between nodes, either as the initial distance or as an updated distance after some merging steps, it raises an error. This was designed intentionally, even if there might be ways to propagate NaNs through the algorithms in a more or less sensible way. Indeed, since the clustering result depends on every single distance value, the presence of NaN values usually indicates a dubious clustering result, and therefore NaN values should be eliminated in preprocessing.\pagebreak[1]
 
 In the R interface for vector input, coordinates with {\NA} value are interpreted as missing data and treated in the same way as R's {\dist} function does. This results in valid output whenever the resulting distances are not NaN. The Python interface does not provide any way of handling missing coordinates, and data should be processed accordingly and given as pairwise distances to the clustering algorithms in this case.
 
@@ -640,9 +644,11 @@ The fastcluster package handles node distances and coordinates with infinite val
 \section{Differences between the two interfaces}
 \begin{itemize}
 \item The \textit{\q mcquitty\q} method in R is called \textit{\q weighted\q} in Python.
-\item R and SciPy use different conventions for the ``Euclidean'' methods \textit{\q centroid\q}, \textit{\q median\q} and  \textit{\q Ward\q}! R assumes that the dissimilarity matrix consists of squared Euclidean distances, while SciPy expects non-squared Euclidean distances. The fastcluster package respects these conventions and uses different formulas in the two interfaces.
+\item R and SciPy use different conventions for the ``Euclidean'' methods \textit{\q centroid\q}, \textit{\q median\q}! R assumes that the dissimilarity matrix consists of squared Euclidean distances, while SciPy expects non-squared Euclidean distances. The fastcluster package respects these conventions and uses different formulas in the two interfaces.
 
-  If the same results in both interfaces ought to be obtained, then the \hyperref[hclust]{\texttt{hclust}} function in R must be fed with the entry-wise square of the distance matrix, \verb!d^2!, for the \textit{\q ward\q}, \textit{\q centroid\q} and \textit{\q median\q} methods, and later the square root of the height field in the dendrogram must be taken. The \hyperref[hclust.vector]{\texttt{hclust.vector}} method calculates non-squared Euclidean distances, like R's \dist{} method and the Python interface. See the \hyperref[squared]{example} in the \hyperref[hclust.vector]{\texttt{hclust.vector}} documentation above.
+The \textit{\q ward\q} method in the Python interface is identical to \textit{\q ward.D2\q} in the R interface.
+
+If the same results in both interfaces ought to be obtained, then the \hyperref[hclust]{\texttt{hclust}} function in R must be input the entry-wise square of the distance matrix, \verb!d^2!, for the \textit{\q ward.D\q}, \textit{\q centroid\q} and \textit{\q median\q} methods, and later the square root of the height field in the dendrogram must be taken. The \hyperref[hclust.vector]{\texttt{hclust.vector}} method calculates non-squared Euclidean distances, like R's \dist{} method and identically to the Python interface. See the \hyperref[squared]{example} in the \hyperref[hclust.vector]{\texttt{hclust.vector}} documentation above.
 
 For the \textit{\q average\q} and \textit{\q weighted\q} alias \textit{\q mcquitty\q} methods, the same, non-squared distance matrix \texttt{d} as in the Python interface must be used for the same results. The \textit{\q single\q} and \textit{\q complete\q} methods only depend on the relative order of the distances, hence it does not make a difference whether the method operates on the distances or the squared distances.
 

@@ -287,11 +287,6 @@ static PyObject *linkage_wrap(PyObject * const, PyObject * const args) {
     }
     t_index N = static_cast<t_index>(N_);
 
-    if (method>METHOD_METR_MEDIAN) {
-      PyErr_SetString(PyExc_IndexError, "Invalid method index.");
-      return NULL;
-    }
-
     // Allow threads!
     GIL_release G;
 
@@ -333,8 +328,11 @@ static PyObject *linkage_wrap(PyObject * const, PyObject * const args) {
     case METHOD_METR_CENTROID:
       generic_linkage<METHOD_METR_CENTROID, t_index>(N, D_, members, Z2);
       break;
-    default: // case METHOD_METR_MEDIAN
+    case METHOD_METR_MEDIAN:
       generic_linkage<METHOD_METR_MEDIAN, t_index>(N, D_, NULL, Z2);
+      break;
+    default:
+      throw std::runtime_error(std::string("Invalid method index."));
     }
 
     if (method==METHOD_METR_WARD ||
@@ -389,7 +387,11 @@ static PyObject *linkage_wrap(PyObject * const, PyObject * const args) {
    Part 2: Clustering on vector data
 */
 
-enum {
+/* Metric codes.
+
+   These codes must agree with the dictionary mtridx in fastcluster.py.
+*/
+enum metric_codes {
   // metrics
   METRIC_EUCLIDEAN       =  0,
   METRIC_MINKOWSKI       =  1,
@@ -462,8 +464,8 @@ public:
 #endif
   python_dissimilarity (PyArrayObject * const Xarg,
                         t_index * const members_,
-                        const unsigned char method,
-                        const unsigned char metric,
+                        const method_codes method,
+                        const metric_codes metric,
                         PyObject * const extraarg,
                         bool temp_point_array)
     : Xa(reinterpret_cast<t_float *>(PyArray_DATA(Xarg))),
@@ -1168,7 +1170,8 @@ static PyObject *linkage_vector_wrap(PyObject * const, PyObject * const args) {
     bool temp_point_array = (method==METHOD_METR_CENTROID ||
                              method==METHOD_METR_MEDIAN);
 
-    python_dissimilarity dist(X, members, method, metric, extraarg,
+    python_dissimilarity dist(X, members, static_cast<method_codes>(method),
+                              static_cast<metric_codes>(metric), extraarg,
                               temp_point_array);
 
     if (method!=METHOD_METR_SINGLE &&
@@ -1187,13 +1190,13 @@ static PyObject *linkage_vector_wrap(PyObject * const, PyObject * const args) {
       MST_linkage_core_vector(N, dist, Z2);
       break;
     case METHOD_METR_WARD:
-      generic_linkage_vector<METHOD_METR_WARD>(N, dist, Z2);
+      generic_linkage_vector<METHOD_VECTOR_WARD>(N, dist, Z2);
       break;
     case METHOD_METR_CENTROID:
-      generic_linkage_vector_alternative<METHOD_METR_CENTROID>(N, dist, Z2);
+      generic_linkage_vector_alternative<METHOD_VECTOR_CENTROID>(N, dist, Z2);
       break;
     default: // case METHOD_METR_MEDIAN:
-      generic_linkage_vector_alternative<METHOD_METR_MEDIAN>(N, dist, Z2);
+      generic_linkage_vector_alternative<METHOD_VECTOR_MEDIAN>(N, dist, Z2);
     }
 
     if (method==METHOD_METR_WARD ||

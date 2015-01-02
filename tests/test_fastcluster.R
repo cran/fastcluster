@@ -38,7 +38,7 @@ compare <- function(dg1, dg2) {
   b = (c(d,1)!=0 & c(1,d)!=0)
   #cat(sprintf("Percentage of indices where we can test: %g.\n",100.0*length(b[b])/length(b)))
   if (any(b)) {
-    m1 = dg1$merge[b,] 
+    m1 = dg1$merge[b,]
     m2 = dg2$merge[b,]
 
     r = function(i) {
@@ -99,7 +99,7 @@ generate.normal <- function() {
 # Test the clustering functions when a distance matrix is given.
 test.dm <-  function(d) {
   d2 = d
-  for (method in c('single','complete','average','mcquitty','ward','centroid','median') ) {
+  for (method in c('single','complete','average','mcquitty','ward.D','ward.D2','centroid','median') ) {
     cat(paste('Method :', method, '\n'))
     dg_fastcluster = fastcluster::hclust(d, method=method)
     dg_stats       = stats::hclust(d, method=method)
@@ -158,15 +158,23 @@ test.vector <-  function() {
       stop(print_seed())
     }
     d = dist(pcd)
-    # Workaround: fastcluster::hclust expects _squared_ euclidean distances.
-    d = d^2
+    if(method == "ward") {
+      method = "ward.D2"
+    }
+    else
+    {
+      # Workaround: fastcluster::hclust expects _squared_ euclidean distances.
+      d = d^2
+    }
     d2 = d
     dg_fastcluster_dist = fastcluster::hclust(d, method=method)
     if (!identical(d,d2)) {
       cat('Input array was corrupted!\n')
       stop(print_seed())
     }
-    dg_fastcluster_dist$height = sqrt(dg_fastcluster_dist$height)
+    if(method != "ward.D2") {
+      dg_fastcluster_dist$height = sqrt(dg_fastcluster_dist$height)
+    }
     # The Euclidean methods may have small numerical errors due to squaring/
     # taking the root in the Euclidean distances.
     if (!compare(dg_fastcluster_dist, dg_fastcluster)) {
@@ -176,7 +184,7 @@ test.vector <-  function() {
   cat('Passed.\n')
 }
 
-# Test the single linkage function with the "binary" metric 
+# Test the single linkage function with the "binary" metric
 test.vector.binary <- function() {
   # generate test data
   cat (sprintf("Uniform sampling for the 'binary' metric:\n"))

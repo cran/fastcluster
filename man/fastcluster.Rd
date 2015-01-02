@@ -40,7 +40,7 @@ source distribution.
   \url{http://danifold.net/fastcluster.html}.
     }
 }
-\references{\url{http://danifold.net}}
+\references{\url{http://danifold.net/fastcluster.html}}
 \author{Daniel Müllner}
 \seealso{\code{\link{hclust}}, \code{\link{hclust.vector}}}
 \examples{# Taken and modified from stats::hclust

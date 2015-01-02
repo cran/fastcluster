@@ -142,4 +142,11 @@ Version 1.1.12, 12/10/2013
 
 Version 1.1.13, 12/17/2013
 
-  • Moved the python directory due to CRAN requirements.
+  • Moved the "python" directory due to CRAN requirements.
+
+Version 1.1.14, 01/02/2015
+
+  • Updated the DESCRIPTION file according to CRAN rules.
+  • Renamed the “ward” method for dissimilarity input to “ward.D” in the R
+    interface and created a new method “ward.D2”, following changes in R's
+    hclust package.

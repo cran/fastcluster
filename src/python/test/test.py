@@ -20,6 +20,10 @@ from scipy.spatial.distance import pdist, squareform
 import math
 import sys
 
+version = '1.1.14'
+if fc.__version__ != version:
+    raise ValueError('Wrong module version: {} instead of {}.'.format(fc.__version__, version))
+
 import atexit
 def print_seed():
   print("Seed: {0}".format(seed))
@@ -59,7 +63,11 @@ def test(Z2, method):
 
     for i in range(n-1):
       for j in range(n-1):
-        mins[j] = np.nanmin(Ds[j,j+1:])
+        # Suppress warning is all distances are NaN.
+        if np.all(np.isnan(Ds[j,j+1:])):
+          mins[j] = np.nan
+        else:
+          mins[j] = np.nanmin(Ds[j,j+1:])
       gmin = np.nanmin(mins)
       if (Z2[i,2]-gmin) > max(abs(Z2[i,2]),abs(gmin))*rtol:
           raise AssertionError('Not the global minimum in step {2}: {0}, {1}'.\

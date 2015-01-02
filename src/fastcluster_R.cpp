@@ -595,7 +595,7 @@ extern "C" {
       if (!IS_INTEGER(method_) || LENGTH(method_)!=1)
         Rf_error("'method' must be a single integer.");
       const int method = *INTEGER_POINTER(method_) - 1; // index-0 based;
-      if (method<METHOD_METR_SINGLE || method>METHOD_METR_MEDIAN) {
+      if (method<MIN_METHOD_CODE || method>MAX_METHOD_CODE) {
         Rf_error("Invalid method index.");
       }
       UNPROTECT(1); // method_
@@ -603,7 +603,8 @@ extern "C" {
       // Parameter members: number of members in each node
       auto_array_ptr<t_float> members;
       if (method==METHOD_METR_AVERAGE ||
-          method==METHOD_METR_WARD ||
+          method==METHOD_METR_WARD_D ||
+          method==METHOD_METR_WARD_D2 ||
           method==METHOD_METR_CENTROID) {
         members.init(N);
         if (Rf_isNull(members_)) {
@@ -634,6 +635,12 @@ extern "C" {
       }
       UNPROTECT(1); // D_
 
+      if (method==METHOD_METR_WARD_D2) {
+        for (t_float * DD = D__; DD!=D__+static_cast<std::ptrdiff_t>(N)*(N-1)/2;
+             ++DD)
+          *DD *= *DD;
+      }
+
       /*
         Clustering step
       */
@@ -651,7 +658,8 @@ extern "C" {
       case METHOD_METR_WEIGHTED:
         NN_chain_core<METHOD_METR_WEIGHTED, t_float>(N, D__, NULL, Z2);
         break;
-      case METHOD_METR_WARD:
+      case METHOD_METR_WARD_D:
+      case METHOD_METR_WARD_D2:
         NN_chain_core<METHOD_METR_WARD, t_float>(N, D__, members, Z2);
         break;
       case METHOD_METR_CENTROID:
@@ -684,6 +692,10 @@ extern "C" {
       SEXP o; // return fiels "order'
       PROTECT(o = NEW_INTEGER(N));
       int * const order = INTEGER_POINTER(o);
+
+      if (method==METHOD_METR_WARD_D2) {
+        Z2.sqrt();
+      }
 
       if (method==METHOD_METR_CENTROID ||
           method==METHOD_METR_MEDIAN)
@@ -842,15 +854,15 @@ extern "C" {
         break;
 
       case METHOD_VECTOR_WARD:
-        generic_linkage_vector<METHOD_METR_WARD>(N, dist, Z2);
+        generic_linkage_vector<METHOD_VECTOR_WARD>(N, dist, Z2);
         break;
 
       case METHOD_VECTOR_CENTROID:
-        generic_linkage_vector_alternative<METHOD_METR_CENTROID>(N, dist, Z2);
+        generic_linkage_vector_alternative<METHOD_VECTOR_CENTROID>(N, dist, Z2);
         break;
 
       case METHOD_VECTOR_MEDIAN:
-        generic_linkage_vector_alternative<METHOD_METR_MEDIAN>(N, dist, Z2);
+        generic_linkage_vector_alternative<METHOD_VECTOR_MEDIAN>(N, dist, Z2);
         break;
 
       default:

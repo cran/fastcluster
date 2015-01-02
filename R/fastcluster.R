@@ -6,7 +6,12 @@
 hclust <- function(d, method="complete", members=NULL)
 {
   # Hierarchical clustering, on raw input data.
-  METHODS <- c("single", "complete", "average", "mcquitty", "ward", "centroid", "median")
+  if(method == "ward") {
+    message("The \"ward\" method has been renamed to \"ward.D\"; note new \"ward.D2\"")
+    method <- "ward.D"
+  }
+  # This array must agree with the enum method_codes in fastcluster.cpp.
+  METHODS <- c("single", "complete", "average", "mcquitty", "ward.D", "centroid", "median", "ward.D2")
   method <- pmatch(method, METHODS)
   if (is.na(method))
     stop("Invalid clustering method.")

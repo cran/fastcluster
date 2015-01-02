@@ -35,18 +35,20 @@ This function implements hierarchical, agglomerative clustering with memory-savi
 
   For the Euclidean methods, care must be taken since
   \code{\link{hclust}} expects \bold{squared} Euclidean
-  distances. Hence, the call\preformatted{  hclust.vector(X, method='ward')}
+  distances. Hence, the call\preformatted{  hclust.vector(X, method='centroid')}
   is, aside from the lesser memory requirements, equivalent to\preformatted{  d = dist(X)
-  hc = hclust(d^2, method='ward')
+  hc = hclust(d^2, method='centroid')
   hc$height = sqrt(hc$height)}
-  The same applies to the \code{"centroid"} and \code{"median"} methods.
+  The same applies to the \code{"median"} method. The \code{"ward"} method in
+  \code{\link{hclust.vector}} is equivalent to \code{\link{hclust}} with method \code{"ward.D2"},
+  but to method \code{"ward.D"} only after squaring as above.
 
   More details are in the User's manual
   \href{http://cran.r-project.org/web/packages/fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf}, which is available as
   a vignette. Get this from the R command line with
   \code{vignette('fastcluster')}.
 }
-\references{\url{http://danifold.net}}
+\references{\url{http://danifold.net/fastcluster.html}}
 \author{Daniel Müllner}
 \seealso{\code{\link{fastcluster}}, \code{\link{hclust}}}
 \examples{# Taken and modified from stats::hclust

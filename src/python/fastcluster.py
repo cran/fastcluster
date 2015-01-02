@@ -19,7 +19,7 @@ also be obtained at <http://danifold.net/fastcluster.html>.
 """
 
 __all__ = ['single', 'complete', 'average', 'weighted', 'ward', 'centroid', 'median', 'linkage', 'linkage_vector']
-__version_info__ = ('1', '1', '13')
+__version_info__ = ('1', '1', '14')
 __version__ = '.'.join(__version_info__)
 
 from numpy import double, empty, array, ndarray, var, cov, dot, bool, \
@@ -70,6 +70,7 @@ def median(D):
 (alias). See the help on the “linkage” function for further information.'''
     return linkage(D, method='median')
 
+# This dictionary must agree with the enum method_codes in fastcluster.cpp.
 mthidx = {'single'   : 0,
           'complete' : 1,
           'average'  : 2,
@@ -245,6 +246,7 @@ and simply ignores the mask.'''
         linkage_wrap(N, X, Z, mthidx[method])
     return Z
 
+# This dictionary must agree with the enum metric_codes in fastcluster_python.cpp.
 mtridx = {'euclidean'      :  0,
           'minkowski'      :  1,
           'cityblock'      :  2,
