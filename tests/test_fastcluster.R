@@ -17,6 +17,8 @@ reproducible, you must include the following number (the random seed value) in
 your error report: %d.\n\n', seed))
 }
 
+hasWardD2 = getRversion() >= '3.1.0'
+
 # Compare two dendrograms and check whether they are equal, except that
 # ties may be resolved differently.
 compare <- function(dg1, dg2) {
@@ -99,10 +101,19 @@ generate.normal <- function() {
 # Test the clustering functions when a distance matrix is given.
 test.dm <-  function(d) {
   d2 = d
-  for (method in c('single','complete','average','mcquitty','ward.D','ward.D2','centroid','median') ) {
+  if (hasWardD2) {
+    methods = c('single','complete','average','mcquitty','ward.D','ward.D2','centroid','median')
+  }
+  else {
+    methods = c('single','complete','average','mcquitty','ward','centroid','median')
+  }
+  for (method in methods) {
     cat(paste('Method :', method, '\n'))
-    dg_fastcluster = fastcluster::hclust(d, method=method)
     dg_stats       = stats::hclust(d, method=method)
+    if (method == 'ward') {
+      method = 'ward.D'
+    }
+    dg_fastcluster = fastcluster::hclust(d, method=method)
     if (!identical(d,d2)) {
       cat('Input array was corrupted!\n')
       stop(print_seed())
@@ -158,7 +169,7 @@ test.vector <-  function() {
       stop(print_seed())
     }
     d = dist(pcd)
-    if(method == "ward") {
+    if(method == "ward" && hasWardD2) {
       method = "ward.D2"
     }
     else

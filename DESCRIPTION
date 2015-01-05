@@ -1,8 +1,8 @@
 Package: fastcluster
 Encoding: UTF-8
 Type: Package
-Version: 1.1.14
-Date: 2015-01-02
+Version: 1.1.15
+Date: 2015-01-05
 Title: Fast Hierarchical Clustering Routines for R and Python
 Authors@R: person("Daniel", "Müllner", email =
         "daniel@danifold.net", role = c("aut", "cph", "cre"))
@@ -19,9 +19,9 @@ Description: This is a two-in-one package which provides interfaces to
         the Python files, see the file INSTALL in the source distribution.
 License: FreeBSD | GPL-2 | file LICENSE
 URL: http://danifold.net/fastcluster.html
-Packaged: 2015-01-04 10:09:52 UTC; muellner
+Packaged: 2015-01-05 20:52:16 UTC; muellner
 Author: Daniel Müllner [aut, cph, cre]
 Maintainer: Daniel Müllner <daniel@danifold.net>
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2015-01-04 11:52:52
+Date/Publication: 2015-01-05 22:51:54

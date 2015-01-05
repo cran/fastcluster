@@ -150,3 +150,8 @@ Version 1.1.14, 01/02/2015
   • Renamed the “ward” method for dissimilarity input to “ward.D” in the R
     interface and created a new method “ward.D2”, following changes in R's
     hclust package.
+
+Version 1.1.15, 05/02/2015
+
+  • Fixed the unit test to work with old and new R versions (see the changes
+    in stats::hclust in R 3.1.0).
