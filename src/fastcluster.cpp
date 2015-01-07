@@ -134,7 +134,10 @@ enum method_codes_vector {
   METHOD_VECTOR_SINGLE         = 0,
   METHOD_VECTOR_WARD           = 1,
   METHOD_VECTOR_CENTROID       = 2,
-  METHOD_VECTOR_MEDIAN         = 3
+  METHOD_VECTOR_MEDIAN         = 3,
+
+  MIN_METHOD_VECTOR_CODE       = 0,
+  MAX_METHOD_VECTOR_CODE       = 3
 };
 
 enum {

@@ -151,7 +151,12 @@ Version 1.1.14, 01/02/2015
     interface and created a new method “ward.D2”, following changes in R's
     hclust package.
 
-Version 1.1.15, 05/02/2015
+Version 1.1.15, 01/05/2015
 
   • Fixed the unit test to work with old and new R versions (see the changes
     in stats::hclust in R 3.1.0).
+
+Version 1.1.16, 01/07/2015
+
+  • Support for large distance matrices (more than 2^31 entries, R's long
+    vector support since version 3.0.0).

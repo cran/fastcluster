@@ -581,24 +581,20 @@ extern "C" {
         Input checks
       */
       // Parameter N: number of data points
-      PROTECT(N_);
       if (!IS_INTEGER(N_) || LENGTH(N_)!=1)
         Rf_error("'N' must be a single integer.");
-      const int N = *INTEGER_POINTER(N_);
+      const int N = INTEGER_VALUE(N_);
       if (N<2)
         Rf_error("N must be at least 2.");
-      const std::ptrdiff_t NN = static_cast<std::ptrdiff_t>(N)*(N-1)/2;
-      UNPROTECT(1); // N_
+      const R_xlen_t NN = static_cast<R_xlen_t>(N)*(N-1)/2;
 
       // Parameter method: dissimilarity index update method
-      PROTECT(method_);
       if (!IS_INTEGER(method_) || LENGTH(method_)!=1)
         Rf_error("'method' must be a single integer.");
-      const int method = *INTEGER_POINTER(method_) - 1; // index-0 based;
+      const int method = INTEGER_VALUE(method_) - 1; // index-0 based;
       if (method<MIN_METHOD_CODE || method>MAX_METHOD_CODE) {
         Rf_error("Invalid method index.");
       }
-      UNPROTECT(1); // method_
 
       // Parameter members: number of members in each node
       auto_array_ptr<t_float> members;
@@ -616,13 +612,13 @@ extern "C" {
             Rf_error("'members' must have length N.");
           const t_float * const m = NUMERIC_POINTER(members_);
           for (t_index i=0; i<N; ++i) members[i] = m[i];
-          UNPROTECT(1); // members
+          UNPROTECT(1); // members_
         }
       }
 
       // Parameter D_: dissimilarity matrix
       PROTECT(D_ = AS_NUMERIC(D_));
-      if (LENGTH(D_)!=NN)
+      if (XLENGTH(D_)!=NN)
         Rf_error("'D' must have length (N \\choose 2).");
       const double * const D = NUMERIC_POINTER(D_);
       // Make a working copy of the dissimilarity array
@@ -630,7 +626,7 @@ extern "C" {
       auto_array_ptr<double> D__;
       if (method!=METHOD_METR_SINGLE) {
         D__.init(NN);
-        for (std::ptrdiff_t i=0; i<NN; ++i)
+        for (R_xlen_t i=0; i<NN; ++i)
           D__[i] = D[i];
       }
       UNPROTECT(1); // D_
@@ -751,25 +747,21 @@ extern "C" {
       */
 
       // Parameter method: dissimilarity index update method
-      PROTECT(method_);
       if (!IS_INTEGER(method_) || LENGTH(method_)!=1)
         Rf_error("'method' must be a single integer.");
-      int method = *INTEGER_POINTER(method_) - 1; // index-0 based;
-      if (method<METHOD_VECTOR_SINGLE || method>METHOD_VECTOR_MEDIAN) {
+      int method = INTEGER_VALUE(method_) - 1; // index-0 based;
+      if (method<MIN_METHOD_VECTOR_CODE || method>MAX_METHOD_VECTOR_CODE) {
         Rf_error("Invalid method index.");
       }
-      UNPROTECT(1); // method_
 
       // Parameter metric
-      PROTECT(metric_);
       if (!IS_INTEGER(metric_) || LENGTH(metric_)!=1)
         Rf_error("'metric' must be a single integer.");
-      int metric = *INTEGER_POINTER(metric_) - 1; // index-0 based;
+      int metric = INTEGER_VALUE(metric_) - 1; // index-0 based;
       if (metric<0 || metric>5 ||
           (method!=METHOD_VECTOR_SINGLE && metric!=0) ) {
         Rf_error("Invalid metric index.");
       }
-      UNPROTECT(1); // metric_
 
       // data array
       PROTECT(X_ = AS_NUMERIC(X_));
@@ -785,9 +777,8 @@ extern "C" {
       // Make a working copy of the dissimilarity array
       // for all methods except "single".
       double * X__ = NUMERIC_POINTER(X_);
-      // Copy the input array and change it from Fortran-contiguous  style
-      // to C-contiguous style
-      // (Waste of memory for 'single'; the other methods need a copy
+      // Copy the input array and change it from Fortran-contiguous style
+      // to C-contiguous style.
       auto_array_ptr<double> X(LENGTH(X_));
       for (std::ptrdiff_t i=0; i<N; ++i)
         for (std::ptrdiff_t j=0; j<dim; ++j)
@@ -809,24 +800,22 @@ extern "C" {
             Rf_error("The length of 'members' must be the same as the number of data points.");
           const t_float * const m = NUMERIC_POINTER(members_);
           for (t_index i=0; i<N; ++i) members[i] = m[i];
-          UNPROTECT(1); // members
+          UNPROTECT(1); // members_
         }
       }
 
       // Parameter p
-      PROTECT(p_);
       double p = 0;
       if (metric==METRIC_R_MINKOWSKI) {
         if (!IS_NUMERIC(p_) || LENGTH(p_)!=1)
           Rf_error("'p' must be a single floating point number.");
-        p = *NUMERIC_POINTER(p_);
+        p = NUMERIC_VALUE(p_);
       }
       else {
         if (p_ != R_NilValue) {
           Rf_error("No metric except 'minkowski' allows a 'p' parameter.");
         }
       }
-      UNPROTECT(1); // p_
 
       /* The generic_linkage_vector_alternative algorithm uses labels
          N,N+1,... for the new nodes, so we need a table which node is

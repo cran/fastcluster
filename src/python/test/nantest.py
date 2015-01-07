@@ -3,7 +3,7 @@ and raises a FloatingPointError.'''
 import numpy as np
 import fastcluster
 
-version = '1.1.15'
+version = '1.1.16'
 if fastcluster.__version__ != version:
     raise ValueError('Wrong module version: {} instead of {}.'.format(fastcluster.__version__, version))
 
