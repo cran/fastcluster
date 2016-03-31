@@ -1000,7 +1000,7 @@ private:
     for (t_index k=0; k<dim; ++k) {
       NTT += (Xb(i,k) &  Xb(j,k)) ;
       NXO += (Xb(i,k) ^  Xb(j,k)) ;
-      NTF += (Xb(i,k) & ~Xb(j,k)) ;
+      NTF += (Xb(i,k) & !Xb(j,k)) ;
     }
     NTF *= (NXO-NTF); // NTFFT
     NTT *= (static_cast<t_index>(dim)-NTT-NXO); // NFFTT

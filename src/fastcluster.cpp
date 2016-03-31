@@ -68,8 +68,31 @@
 #endif
 
 #ifndef INT32_MAX
+#ifdef _MSC_VER
+#if _MSC_VER >= 1600
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
+#else
+typedef __int32 int_fast32_t;
+typedef __int64 int64_t;
+#endif
+#else
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
+#endif
+#endif
+
+#define FILL_N std::fill_n
+#ifdef _MSC_VER
+#if _MSC_VER < 1600
+#undef FILL_N
+#define FILL_N stdext::unchecked_fill_n
+#endif
+#endif
+
+// Suppress warnings about (potentially) uninitialized variables.
+#ifdef _MSC_VER
+	#pragma warning (disable:4700)
 #endif
 
 #ifndef HAVE_DIAGNOSTIC
@@ -167,7 +190,7 @@ public:
   auto_array_ptr(index const size, value const val)
     : ptr(new type[size])
   {
-    std::fill_n(ptr, size, val);
+    FILL_N(ptr, size, val);
   }
   ~auto_array_ptr() {
     delete [] ptr; }
@@ -182,7 +205,7 @@ public:
   template <typename index, typename value>
   void init(index const size, value const val) {
     init(size);
-    std::fill_n(ptr, size, val);
+    FILL_N(ptr, size, val);
   }
   inline operator type *() const { return ptr; }
 };

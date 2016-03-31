@@ -12,17 +12,13 @@ else:
 print(u('''Test program for the 'fastcluster' package.
 
 Copyright (c) 2011 Daniel Müllner, <http://danifold.net>
-
-If everything is OK, the test program will run forever, without an error
-message.
-'''))
+''').encode('utf-8'))
 import fastcluster as fc
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 import math
-import sys
 
-version = '1.1.16'
+version = '1.1.20'
 if fc.__version__ != version:
     raise ValueError('Wrong module version: {} instead of {}.'.format(fc.__version__, version))
 
@@ -86,7 +82,7 @@ def test_all(n,dim):
 
     if np.any(pcd2!=pcd):
       raise AssertionError('Input array was corrupted.', pcd)
-    test(Z2, method, D)
+    check(Z2, method, D)
 
   # metrics for real vectors
   bound = math.sqrt(n)
@@ -121,14 +117,14 @@ def test_all(n,dim):
                 raise AssertionError(
                     '"linkage_vector" erroneously reported NaN.')
 
-    test(Z2, method, D)
+    check(Z2, method, D)
 
   D = pdist(pcd)
   for method in ['ward', 'centroid', 'median']:
     Z2 = fc.linkage_vector(pcd, method)
-    test(Z2, method, D)
+    check(Z2, method, D)
 
-def test(Z2, method, D):
+def check(Z2, method, D):
     sys.stdout.write("Method: " + method + "...")
     I = np.array(Z2[:,:2], dtype=int)
 
@@ -225,16 +221,30 @@ def test(Z2, method, D):
       size[i2] = S
     print('OK.')
 
-while True:
-  dim = np.random.random_integers(2,12)
-  n = np.random.random_integers(max(2*dim,5),200)
+def test(repeats):
+    if repeats:
+        iterator = range(repeats)
+    else:
+        import itertools
+        iterator = itertools.repeat(None)
+        print('''
+If everything is OK, the test program will run forever, without an error
+message.
+''')
+    for _ in iterator:
+        dim = np.random.random_integers(2,12)
+        n = np.random.random_integers(max(2*dim,5),200)
 
-  print('Dimension: {0}'.format(dim))
-  print('Number of points: {0}'.format(n))
+        print('Dimension: {0}'.format(dim))
+        print('Number of points: {0}'.format(n))
 
-  try:
-    test_all(n,dim)
-  except AssertionError as E:
-    print(E.args[0])
-    print(E.args[1])
-    sys.exit()
+        try:
+            test_all(n,dim)
+        except AssertionError as E:
+            print(E.args[0])
+            print(E.args[1])
+            return False
+    return True
+
+if __name__ == "__main__":
+    test(None)

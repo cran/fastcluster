@@ -6,7 +6,7 @@ This function implements hierarchical, agglomerative clustering with memory-savi
 \usage{hclust.vector(X, method="single", members=NULL, metric='euclidean', p=NULL)}
 \arguments{
 \item{X}{an \eqn{(N\times D)}{(N×D)} matrix of '\link{double}' values:
-  \eqn{N}{N} observations in \eqn{N}{N} variables.}
+  \eqn{N}{N} observations in \eqn{D}{D} variables.}
 \item{method}{the agglomeration method to be used. This must be (an
   unambiguous abbreviation of) one of \code{"single"},
   \code{"ward"}, \code{"centroid"} or \code{"median"}.}

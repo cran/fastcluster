@@ -10,17 +10,13 @@ else:
 print(u('''Test program for the 'fastcluster' package.
 
 Copyright (c) 2011 Daniel Müllner, <http://danifold.net>
-
-If everything is OK, the test program will run forever, without an error
-message.
-'''))
+''').encode('utf-8'))
 import fastcluster as fc
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 import math
-import sys
 
-version = '1.1.16'
+version = '1.1.20'
 if fc.__version__ != version:
     raise ValueError('Wrong module version: {} instead of {}.'.format(fc.__version__, version))
 
@@ -38,16 +34,16 @@ rtol = 1e-14 # relative tolerance
 # NaN values are used in computations. Do not warn about them.
 np.seterr(invalid='ignore')
 
-def test_all():
+def test_all(D):
   D2 = D.copy()
   for method in ['single', 'complete', 'average', 'weighted', 'ward',
                  'centroid', 'median']:
     Z2 = fc.linkage(D, method)
     if np.any(D2!=D):
       raise AssertionError('Input array was corrupted.')
-    test(Z2, method)
+    check(Z2, D, method)
 
-def test(Z2, method):
+def check(Z2, D, method):
     sys.stdout.write("Method: " + method + "...")
     I = np.array(Z2[:,:2], dtype=int)
 
@@ -63,7 +59,7 @@ def test(Z2, method):
 
     for i in range(n-1):
       for j in range(n-1):
-        # Suppress warning is all distances are NaN.
+        # Suppress warning if all distances are NaN.
         if np.all(np.isnan(Ds[j,j+1:])):
           mins[j] = np.nan
         else:
@@ -143,21 +139,35 @@ def test(Z2, method):
       size[i2] = S
     print('OK.')
 
-while True:
-  dim = np.random.random_integers(2,20)
-  n = np.random.random_integers(2,100)
+def test(repeats):
+    if repeats:
+        iterator = range(repeats)
+    else:
+        import itertools
+        iterator = itertools.repeat(None)
+        print('''
+If everything is OK, the test program will run forever, without an error
+message.
+''')
+    for _ in iterator:
+        dim = np.random.random_integers(2,20)
+        n = np.random.random_integers(2,100)
 
-  print('Dimension: {0}'.format(dim))
-  print('Number of points: {0}'.format(n))
-  D = pdist(np.random.randn(n,dim))
+        print('Dimension: {0}'.format(dim))
+        print('Number of points: {0}'.format(n))
+        D = pdist(np.random.randn(n,dim))
 
-  try:
-    print('Real distance values:')
-    test_all()
-    D = np.round(D*n/4)
-    print('Integer distance values:')
-    test_all()
-  except AssertionError as E:
-    print(E)
-    print(squareform(D))
-    sys.exit()
+        try:
+            print('Real distance values:')
+            test_all(D)
+            D = np.round(D*n/4)
+            print('Integer distance values:')
+            test_all(D)
+        except AssertionError as E:
+            print(E)
+            print(squareform(D))
+            return False
+    return True
+
+if __name__ == "__main__":
+    test(None)

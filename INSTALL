@@ -46,30 +46,41 @@ Installation for Python
 Make sure that you have both Python and NumPy installed.
 
 
-1. Microsoft Windows
-‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-Christoph Gohlke provides installation files for Windows on his web page:
+1. On all platforms
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+If pip is installed, type
 
-    http://www.lfd.uci.edu/~gohlke/pythonlibs/#fastcluster
-
-
-2. Other operating systems, with setuptools
-‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-If setuptools are installed, type
-
-    easy_install --upgrade --user fastcluster
+    pip install --upgrade --user fastcluster
 
 in a terminal, which automatically downloads the latest version from PyPI,
 compiles the C++ library and installs the package for a single user without
 administrator rights.
 
-If you cannot make this work, use method 3. Also, this method gives you
-access to all accompanying information, in particular the documentation in
-docs/fastcluster.pdf. Moreover, it installs (insignificantly) fewer files.
+If this works, there is no need to follow the alternative steps below.
 
 
-3. Without setuptools
-‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+2. Microsoft Windows
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+Installation files for Windows are stored on PyPI:
+
+    https://pypi.python.org/pypi/fastcluster
+
+Christoph Gohlke also provides installation files for Windows on his web page:
+
+    http://www.lfd.uci.edu/~gohlke/pythonlibs/#fastcluster
+
+
+3. With setuptools
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+If pip is not available but setuptools, type
+
+    easy_install --upgrade --user fastcluster
+
+in a terminal.
+
+
+4. From the source package
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 If you have not done so already, download the fastcluster package from PyPI
 here:
 
