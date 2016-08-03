@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-import numpy
+from os import path
 if sys.hexversion < 0x03000000: # uniform unicode handling for both Python 2.x and 3.x
     def u(x):
         return x.decode('utf-8')
@@ -23,6 +23,8 @@ u('''
 #distutils.debug.DEBUG = 'yes'
 from setuptools import setup, Extension
 
+here = path.abspath(path.dirname(__file__))
+
 with textfileopen('fastcluster.py') as f:
     for line in f:
         if line.find('__version_info__ =')==0:
@@ -30,6 +32,24 @@ with textfileopen('fastcluster.py') as f:
             break
 
 print('Version: ' + version)
+print(here)
+print(os.path.join(here, '../fastcluster_python.cpp'))
+
+
+def get_include_dirs():
+    def is_special_command():
+        special_list = ('--help-commands',
+                        'egg_info',
+                        '--version',
+                        'clean')
+        return ('--help' in sys.argv[1:] or
+                sys.argv[1] in special_list)
+
+    if len(sys.argv) >= 2 and is_special_command():
+        return []
+
+    import numpy
+    return [numpy.get_include()]
 
 setup(name='fastcluster',
       version=version,
@@ -69,11 +89,13 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
 (2013), no. 9, 1–18, http://www.jstatsoft.org/v53/i09/.
 """),
       requires=['numpy'],
+      install_requires=["numpy>=1.9"],
+      setup_requires=['numpy'],
       provides=['fastcluster'],
       ext_modules=[Extension('_fastcluster',
-                             ['../fastcluster_python.cpp'],
+                             ["../fastcluster_python.cpp"],
                              extra_compile_args=['/EHsc'] if os.name=='nt' else [],
-                             include_dirs=[numpy.get_include()],
+                             include_dirs=get_include_dirs(),
 # Feel free to uncomment the line below if you use the GCC.
 # This switches to more aggressive optimization and turns
 # more warning switches on. No warning should appear in
