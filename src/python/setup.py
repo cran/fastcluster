@@ -71,7 +71,7 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
       requires=['numpy'],
       provides=['fastcluster'],
       ext_modules=[Extension('_fastcluster',
-                             ['../fastcluster_python.cpp'],
+                             ['fastcluster_python.cpp'],
                              extra_compile_args=['/EHsc'] if os.name=='nt' else [],
                              include_dirs=[numpy.get_include()],
 # Feel free to uncomment the line below if you use the GCC.
@@ -92,6 +92,7 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
 # Linker optimization
 #extra_link_args=['-Wl,--strip-all'],
       )],
+      test_suite="tests",
       keywords=['dendrogram', 'linkage', 'cluster', 'agglomerative', 'hierarchical', 'hierarchy', 'ward'],
       author=u("Daniel Müllner"),
       author_email="daniel@danifold.net",

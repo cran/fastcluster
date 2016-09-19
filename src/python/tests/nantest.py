@@ -2,21 +2,13 @@
 # -*- coding: utf-8 -*-
 '''Test whether the fastcluster package correctly recognizes NaN values
 and raises a FloatingPointError.'''
-import sys
-if sys.hexversion < 0x03000000: # uniform unicode handling for both Python 2.x and 3.x
-    def u(x):
-        return x.decode('utf-8')
-else:
-    def u(x):
-        return x
-print(u('''Test program for the 'fastcluster' package.
-
-Copyright (c) 2011 Daniel Müllner, <http://danifold.net>
-''').encode('utf-8'))
+print('''
+Test program for the 'fastcluster' package.
+Copyright (c) 2011 Daniel Müllner, <http://danifold.net>''')
 import numpy as np
 import fastcluster
 
-version = '1.1.20'
+version = '1.1.21'
 if fastcluster.__version__ != version:
     raise ValueError('Wrong module version: {} instead of {}.'.format(fastcluster.__version__, version))
 
@@ -30,7 +22,7 @@ seed = np.random.randint(0,1e9)
 np.random.seed(seed)
 
 def test():
-    n = np.random.random_integers(2,100)
+    n = np.random.randint(2,100)
 
     # Part 1: distance matrix input
 
@@ -59,7 +51,7 @@ def test():
 
     # Part 2: vector input
 
-    dim = np.random.random_integers(2,12)
+    dim = np.random.randint(2,13)
     X = np.random.rand(n,dim)
     pos = (np.random.randint(n), np.random.randint(dim))
     # Insert a single NaN coordinate
