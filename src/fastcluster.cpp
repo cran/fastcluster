@@ -35,22 +35,31 @@
   exception if a NaN distance value occurs.
 */
 
+// Older versions of Microsoft Visual Studio do not have the fenv header.
+#ifdef _MSC_VER
+#if (_MSC_VER == 1500 || _MSC_VER == 1600)
+#define NO_INCLUDE_FENV
+#endif
+#endif
+// NaN detection via fenv might not work on systems with software
+// floating-point emulation (bug report for Debian armel).
+#ifdef __SOFTFP__
+#define NO_INCLUDE_FENV
+#endif
+#ifdef NO_INCLUDE_FENV
+#pragma message("Do not use fenv header.")
+#else
+#pragma message("Use fenv header. If there is a warning about unknown #pragma STDC FENV_ACCESS, this can be ignored.")
+#pragma STDC FENV_ACCESS on
+#include <fenv.h>
+#endif
+
 #include <cmath> // for std::pow, std::sqrt
 #include <cstddef> // for std::ptrdiff_t
 #include <limits> // for std::numeric_limits<...>::infinity()
 #include <algorithm> // for std::fill_n
 #include <stdexcept> // for std::runtime_error
 #include <string> // for std::string
-
-// Microsoft Visual Studio does not have fenv.h
-#ifdef _MSC_VER
-#if (_MSC_VER == 1500 || _MSC_VER == 1600)
-#define NO_INCLUDE_FENV
-#endif
-#endif
-#ifndef NO_INCLUDE_FENV
-#include <fenv.h>
-#endif
 
 #include <cfloat> // also for DBL_MAX, DBL_MIN
 #ifndef DBL_MANT_DIG
@@ -209,8 +218,8 @@ struct node {
 };
 
 inline bool operator< (const node a, const node b) {
-    return (a.dist < b.dist);
-  }
+  return (a.dist < b.dist);
+}
 
 class cluster_result {
 private:

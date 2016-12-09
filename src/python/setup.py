@@ -92,7 +92,6 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
 # Linker optimization
 #extra_link_args=['-Wl,--strip-all'],
       )],
-      test_suite="tests",
       keywords=['dendrogram', 'linkage', 'cluster', 'agglomerative', 'hierarchical', 'hierarchy', 'ward'],
       author=u("Daniel Müllner"),
       author_email="daniel@danifold.net",
@@ -111,4 +110,5 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
                      "Intended Audience :: Science/Research",
                      "Development Status :: 5 - Production/Stable"],
       url = 'http://danifold.net',
+      test_suite='tests',
 )
