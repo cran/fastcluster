@@ -2,7 +2,11 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-from os import path
+
+#import distutils.debug
+#distutils.debug.DEBUG = 'yes'
+from setuptools import setup, Extension
+
 if sys.hexversion < 0x03000000: # uniform unicode handling for both Python 2.x and 3.x
     def u(x):
         return x.decode('utf-8')
@@ -19,24 +23,19 @@ u('''
   Copyright © 2011 Daniel Müllner
   <http://danifold.net>
 ''')
-#import distutils.debug
-#distutils.debug.DEBUG = 'yes'
-from setuptools import setup, Extension
-
-here = path.abspath(path.dirname(__file__))
 
 with textfileopen('fastcluster.py') as f:
     for line in f:
-        if line.find('__version_info__ =')==0:
+        if line.find('__version_info__ =') == 0:
             version = '.'.join(line.split("'")[1:-1:2])
             break
 
 print('Version: ' + version)
-print(here)
-print(os.path.join(here, '../fastcluster_python.cpp'))
 
 
 def get_include_dirs():
+    """ avoid importing numpy until here, so that users can run "setup.py install"
+    without having numpy installed yet """
     def is_special_command():
         special_list = ('--help-commands',
                         'egg_info',
@@ -94,7 +93,7 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
       provides=['fastcluster'],
       ext_modules=[Extension('_fastcluster',
                              ["../fastcluster_python.cpp"],
-                             extra_compile_args=['/EHsc'] if os.name=='nt' else [],
+                             extra_compile_args=['/EHsc'] if os.name == 'nt' else [],
                              include_dirs=get_include_dirs(),
 # Feel free to uncomment the line below if you use the GCC.
 # This switches to more aggressive optimization and turns
@@ -114,22 +113,24 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
 # Linker optimization
 #extra_link_args=['-Wl,--strip-all'],
       )],
-      keywords=['dendrogram', 'linkage', 'cluster', 'agglomerative', 'hierarchical', 'hierarchy', 'ward'],
+      keywords=['dendrogram', 'linkage', 'cluster', 'agglomerative',
+                'hierarchical', 'hierarchy', 'ward'],
       author=u("Daniel Müllner"),
       author_email="daniel@danifold.net",
       license="BSD <http://opensource.org/licenses/BSD-2-Clause>",
-      classifiers = ["Topic :: Scientific/Engineering :: Information Analysis",
-                     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-                     "Topic :: Scientific/Engineering :: Bio-Informatics",
-                     "Topic :: Scientific/Engineering :: Mathematics",
-                     "Programming Language :: Python",
-                     "Programming Language :: Python :: 2",
-                     "Programming Language :: Python :: 3",
-                     "Programming Language :: C++",
-                     "Operating System :: OS Independent",
-                     "License :: OSI Approved :: BSD License",
-                     "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
-                     "Intended Audience :: Science/Research",
-                     "Development Status :: 5 - Production/Stable"],
-      url = 'http://danifold.net',
+      classifiers=[
+          "Topic :: Scientific/Engineering :: Information Analysis",
+          "Topic :: Scientific/Engineering :: Artificial Intelligence",
+          "Topic :: Scientific/Engineering :: Bio-Informatics",
+          "Topic :: Scientific/Engineering :: Mathematics",
+          "Programming Language :: Python",
+          "Programming Language :: Python :: 2",
+          "Programming Language :: Python :: 3",
+          "Programming Language :: C++",
+          "Operating System :: OS Independent",
+          "License :: OSI Approved :: BSD License",
+          "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+          "Intended Audience :: Science/Research",
+          "Development Status :: 5 - Production/Stable"],
+      url='http://danifold.net',
 )
