@@ -92,9 +92,9 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
       setup_requires=['numpy'],
       provides=['fastcluster'],
       ext_modules=[Extension('_fastcluster',
-                             ["../fastcluster_python.cpp"],
+                             ['fastcluster_python.cpp'],
                              extra_compile_args=['/EHsc'] if os.name == 'nt' else [],
-                             include_dirs=get_include_dirs(),
+                             include_dirs=[get_include_dirs()],
 # Feel free to uncomment the line below if you use the GCC.
 # This switches to more aggressive optimization and turns
 # more warning switches on. No warning should appear in
@@ -133,4 +133,5 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
           "Intended Audience :: Science/Research",
           "Development Status :: 5 - Production/Stable"],
       url='http://danifold.net',
+      test_suite='tests',
 )

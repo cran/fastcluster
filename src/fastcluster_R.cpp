@@ -23,6 +23,7 @@
 #define fc_isnan(X) ((X)!=(X))
 // There is ISNAN but it is so much slower on my x86_64 system with GCC!
 
+#include <cmath> // for std::abs
 #include <cstddef> // for std::ptrdiff_t
 #include <limits> // for std::numeric_limits<...>::infinity()
 #include <algorithm> // for std::stable_sort
@@ -426,7 +427,7 @@ private:
     double * p2 = x+i2*nc;
     for(j = 0 ; j < nc ; ++j) {
       if(both_non_NA(*p1, *p2)) {
-        dev = fabs(*p1 - *p2);
+        dev = std::abs(*p1 - *p2);
         if(!ISNAN(dev)) {
           if(dev > dist)
             dist = dev;
@@ -450,7 +451,7 @@ private:
     double * p2 = x+i2*nc;
     for(j = 0 ; j < nc ; ++j) {
       if(both_non_NA(*p1, *p2)) {
-        dev = fabs(*p1 - *p2);
+        dev = std::abs(*p1 - *p2);
         if(!ISNAN(dev)) {
           dist += dev;
           ++count;
@@ -474,8 +475,8 @@ private:
     double * p2 = x+i2*nc;
     for(j = 0 ; j < nc ; ++j) {
       if(both_non_NA(*p1, *p2)) {
-        sum = fabs(*p1 + *p2);
-        diff = fabs(*p1 - *p2);
+        sum = std::abs(*p1 + *p2);
+        diff = std::abs(*p1 - *p2);
         if (sum > DBL_MIN || diff > DBL_MIN) {
           dev = diff/sum;
 #if HAVE_DIAGNOSTIC
@@ -553,7 +554,7 @@ private:
       if(both_non_NA(*p1, *p2)) {
         dev = (*p1 - *p2);
         if(!ISNAN(dev)) {
-          dist += R_pow(fabs(dev), p);
+          dist += R_pow(std::abs(dev), p);
           ++count;
         }
       }

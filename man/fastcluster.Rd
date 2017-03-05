@@ -31,10 +31,10 @@ source distribution.
     \code{\link{hclust.vector}}
 
     \item A comprehensive User's manual:
-    \href{http://cran.r-project.org/web/packages/fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf}. Get this from the R
+    \href{https://CRAN.R-project.org/package=fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf}. Get this from the R
     command line with \code{vignette('fastcluster')}.
 
-    \item JSS paper: \url{http://www.jstatsoft.org/v53/i09/}.
+    \item JSS paper: \url{https://www.jstatsoft.org/v53/i09/}.
 
     \item See the author's home page for a performance comparison:
   \url{http://danifold.net/fastcluster.html}.

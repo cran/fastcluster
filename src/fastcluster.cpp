@@ -35,21 +35,31 @@
   exception if a NaN distance value occurs.
 */
 
-#include <cstddef> // for std::ptrdiff_t
-#include <limits> // for std::numeric_limits<...>::infinity()
-#include <algorithm> // for std::fill_n
-#include <stdexcept> // for std::runtime_error
-#include <string> // for std::string
-
-// Microsoft Visual Studio does not have fenv.h
+// Older versions of Microsoft Visual Studio do not have the fenv header.
 #ifdef _MSC_VER
 #if (_MSC_VER == 1500 || _MSC_VER == 1600)
 #define NO_INCLUDE_FENV
 #endif
 #endif
-#ifndef NO_INCLUDE_FENV
+// NaN detection via fenv might not work on systems with software
+// floating-point emulation (bug report for Debian armel).
+#ifdef __SOFTFP__
+#define NO_INCLUDE_FENV
+#endif
+#ifdef NO_INCLUDE_FENV
+#pragma message("Do not use fenv header.")
+#else
+#pragma message("Use fenv header. If there is a warning about unknown #pragma STDC FENV_ACCESS, this can be ignored.")
+#pragma STDC FENV_ACCESS on
 #include <fenv.h>
 #endif
+
+#include <cmath> // for std::pow, std::sqrt
+#include <cstddef> // for std::ptrdiff_t
+#include <limits> // for std::numeric_limits<...>::infinity()
+#include <algorithm> // for std::fill_n
+#include <stdexcept> // for std::runtime_error
+#include <string> // for std::string
 
 #include <cfloat> // also for DBL_MAX, DBL_MIN
 #ifndef DBL_MANT_DIG
@@ -163,14 +173,6 @@ enum method_codes_vector {
   MAX_METHOD_VECTOR_CODE       = 3
 };
 
-enum {
-   // Return values
-  RET_SUCCESS        = 0,
-  RET_MEMORY_ERROR   = 1,
-  RET_STL_ERROR      = 2,
-  RET_UNKNOWN_ERROR  = 3
- };
-
 // self-destructing array pointer
 template <typename type>
 class auto_array_ptr{
@@ -213,17 +215,11 @@ public:
 struct node {
   t_index node1, node2;
   t_float dist;
-
-  /*
-  inline bool operator< (const node a) const {
-    return this->dist < a.dist;
-  }
-  */
-
-  inline friend bool operator< (const node a, const node b) {
-    return (a.dist < b.dist);
-  }
 };
+
+inline bool operator< (const node a, const node b) {
+  return (a.dist < b.dist);
+}
 
 class cluster_result {
 private:
@@ -250,7 +246,7 @@ public:
 
   void sqrt() const {
     for (node * ZZ=Z; ZZ!=Z+pos; ++ZZ) {
-      ZZ->dist = ::sqrt(ZZ->dist);
+      ZZ->dist = std::sqrt(ZZ->dist);
     }
   }
 
@@ -260,14 +256,14 @@ public:
 
   void sqrtdouble(const t_float) const { // ignore the argument
     for (node * ZZ=Z; ZZ!=Z+pos; ++ZZ) {
-      ZZ->dist = ::sqrt(2*ZZ->dist);
+      ZZ->dist = std::sqrt(2*ZZ->dist);
     }
   }
 
   #ifdef R_pow
   #define my_pow R_pow
   #else
-  #define my_pow pow
+  #define my_pow std::pow
   #endif
 
   void power(const t_float p) const {

@@ -44,7 +44,7 @@ This function implements hierarchical, agglomerative clustering with memory-savi
   but to method \code{"ward.D"} only after squaring as above.
 
   More details are in the User's manual
-  \href{http://cran.r-project.org/web/packages/fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf}, which is available as
+  \href{https://CRAN.R-project.org/package=fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf}, which is available as
   a vignette. Get this from the R command line with
   \code{vignette('fastcluster')}.
 }
