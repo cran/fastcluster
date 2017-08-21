@@ -1,7 +1,8 @@
 #  fastcluster: Fast hierarchical clustering routines for R and Python
 #
-#  Copyright © 2011 Daniel Müllner
-#  <http://danifold.net>
+#  Copyright:
+#    * Until package version 1.1.23: © 2011 Daniel Müllner <http://danifold.net>
+#    * All changes from version 1.1.24 on: © Google Inc. <http://google.com>
 
 hclust <- function(d, method="complete", members=NULL)
 {
@@ -42,10 +43,12 @@ hclust.vector <- function(X, method='single', members=NULL, metric='euclidean', 
   METRICS <- c("euclidean", "maximum", "manhattan", "canberra", "binary",
                "minkowski")
   metric = pmatch(metric, METRICS)
-  if (is.na(metric))
+  if (is.na(metric) || metric > 6)
     stop("Invalid metric.")
   if (metric == -1)
     stop("Ambiguous metric.")
+  if (metric == 4 && getRversion() < "3.5.0")
+    metric <- as.integer(7) # special metric code for backwards compatibility
 
   if (methodidx!=1 && metric!=1)
     stop("The Euclidean methods 'ward', 'centroid' and 'median' require the 'euclidean' metric.")

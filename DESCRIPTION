@@ -1,12 +1,15 @@
 Package: fastcluster
 Encoding: UTF-8
 Type: Package
-Version: 1.1.23
-Date: 2017-08-07
+Version: 1.1.24
+Date: 2017-08-14
 Title: Fast Hierarchical Clustering Routines for R and Python
 Authors@R: person("Daniel", "Müllner", email = "daniel@danifold.net", role = c("aut", "cph", "cre"))
+Copyright: Until package version 1.1.23: © 2011 Daniel Müllner
+        <http://danifold.net>. All changes from version 1.1.24 on: ©
+        Google Inc. <http://google.com>.
 Enhances: stats, flashClust
-Depends: R (>= 3.0.0), R (< 3.5.0)
+Depends: R (>= 3.0.0)
 Description: This is a two-in-one package which provides interfaces to
         both R and Python. It implements fast hierarchical, agglomerative
         clustering routines. Part of the functionality is designed as drop-in
@@ -20,8 +23,8 @@ Description: This is a two-in-one package which provides interfaces to
 License: FreeBSD | GPL-2 | file LICENSE
 URL: http://danifold.net/fastcluster.html
 NeedsCompilation: yes
-Packaged: 2017-08-07 20:30:08 UTC; muellner
+Packaged: 2017-08-20 21:16:52 UTC; muellner
 Author: Daniel Müllner [aut, cph, cre]
 Maintainer: Daniel Müllner <daniel@danifold.net>
 Repository: CRAN
-Date/Publication: 2017-08-21 08:33:16 UTC
+Date/Publication: 2017-08-21 10:36:48 UTC

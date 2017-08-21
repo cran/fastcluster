@@ -1,8 +1,9 @@
 /*
   fastcluster: Fast hierarchical clustering routines for R and Python
 
-  Copyright © 2011 Daniel Müllner
-  <http://danifold.net>
+  Copyright:
+    * Until package version 1.1.23: © 2011 Daniel Müllner <http://danifold.net>
+    * All changes from version 1.1.24 on: © Google Inc. <http://google.com>
 */
 #if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 6))
 #define HAVE_DIAGNOSTIC 1
@@ -173,12 +174,13 @@ void generate_R_dendrogram(int * const merge, double * const height, int * const
 */
 
 enum {
-  METRIC_R_EUCLIDEAN = 0,
-  METRIC_R_MAXIMUM   = 1,
-  METRIC_R_MANHATTAN = 2,
-  METRIC_R_CANBERRA  = 3,
-  METRIC_R_BINARY    = 4,
-  METRIC_R_MINKOWSKI = 5
+  METRIC_R_EUCLIDEAN     = 0,
+  METRIC_R_MAXIMUM       = 1,
+  METRIC_R_MANHATTAN     = 2,
+  METRIC_R_CANBERRA      = 3,
+  METRIC_R_BINARY        = 4,
+  METRIC_R_MINKOWSKI     = 5,
+  METRIC_R_CANBERRA_OLD  = 6
 };
 
 #if HAVE_DIAGNOSTIC
@@ -247,6 +249,9 @@ public:
       case METRIC_R_MINKOWSKI:
         distfn = &R_dissimilarity::minkowski;
         postprocessfn = &cluster_result::power;
+        break;
+      case METRIC_R_CANBERRA_OLD:
+        distfn = &R_dissimilarity::canberra_old;
         break;
       default:
         throw std::runtime_error(std::string("Invalid method."));
@@ -475,23 +480,46 @@ private:
     double * p2 = x+i2*nc;
     for(j = 0 ; j < nc ; ++j) {
       if(both_non_NA(*p1, *p2)) {
+        sum = std::abs(*p1) + std::abs(*p2);
+        diff = std::abs(*p1 - *p2);
+        if (sum > DBL_MIN || diff > DBL_MIN) {
+          dev = diff/sum;
+          if(!ISNAN(dev) ||
+             (!R_FINITE(diff) && diff == sum &&
+              /* use Inf = lim x -> oo */ (dev = 1., true))) {
+            dist += dev;
+            ++count;
+          }
+        }
+      }
+      ++p1;
+      ++p2;
+    }
+    if(count == 0) return NA_REAL;
+    if(count != nc) dist /= (static_cast<double>(count)/static_cast<double>(nc));
+    return dist;
+  }
+
+  double canberra_old(t_index i1, t_index i2) const {
+    double dev, dist, sum, diff;
+    int count, j;
+
+    count = 0;
+    dist = 0;
+    double * p1 = x+i1*nc;
+    double * p2 = x+i2*nc;
+    for(j = 0 ; j < nc ; ++j) {
+      if(both_non_NA(*p1, *p2)) {
         sum = std::abs(*p1 + *p2);
         diff = std::abs(*p1 - *p2);
         if (sum > DBL_MIN || diff > DBL_MIN) {
           dev = diff/sum;
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
           if(!ISNAN(dev) ||
              (!R_FINITE(diff) && diff == sum &&
-              /* use Inf = lim x -> oo */ (dev = 1.))) {
+              /* use Inf = lim x -> oo */ (dev = 1., true))) {
             dist += dev;
             ++count;
           }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
         }
       }
       ++p1;
@@ -759,7 +787,7 @@ extern "C" {
       if (!IS_INTEGER(metric_) || LENGTH(metric_)!=1)
         Rf_error("'metric' must be a single integer.");
       int metric = INTEGER_VALUE(metric_) - 1; // index-0 based;
-      if (metric<0 || metric>5 ||
+      if (metric<0 || metric>6 ||
           (method!=METHOD_VECTOR_SINGLE && metric!=0) ) {
         Rf_error("Invalid metric index.");
       }
