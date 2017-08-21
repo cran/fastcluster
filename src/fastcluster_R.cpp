@@ -920,14 +920,16 @@ extern "C" {
 #if HAVE_VISIBILITY
 #pragma GCC visibility push(default)
 #endif
-  void R_init_fastcluster(DllInfo * const info)
+  void R_init_fastcluster(DllInfo * const dll)
   {
     R_CallMethodDef callMethods[]  = {
       {"fastcluster", (DL_FUNC) &fastcluster, 4},
       {"fastcluster_vector", (DL_FUNC) &fastcluster_vector, 5},
       {NULL, NULL, 0}
     };
-    R_registerRoutines(info, NULL, callMethods, NULL, NULL);
+    R_registerRoutines(dll, NULL, callMethods, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
+    R_forceSymbols(dll, TRUE);
   }
 #if HAVE_VISIBILITY
 #pragma GCC visibility pop

@@ -19,7 +19,7 @@ also be obtained at <http://danifold.net/fastcluster.html>.
 """
 
 __all__ = ['single', 'complete', 'average', 'weighted', 'ward', 'centroid', 'median', 'linkage', 'linkage_vector']
-__version_info__ = ('1', '1', '22')
+__version_info__ = ('1', '1', '23')
 __version__ = '.'.join(__version_info__)
 
 from numpy import double, empty, array, ndarray, var, cov, dot, bool, \
@@ -80,7 +80,7 @@ mthidx = {'single'   : 0,
           'median'   : 6 }
 
 def linkage(X, method='single', metric='euclidean', preserve_input=True):
-    '''Hierarchical, agglomerative clustering on a dissimilarity matrix or on
+    r'''Hierarchical, agglomerative clustering on a dissimilarity matrix or on
 Euclidean data.
 
 Apart from the argument 'preserve_input', the method has the same input
@@ -234,8 +234,8 @@ and simply ignores the mask.'''
         NN = len(X)
         N = int(ceil(sqrt(NN*2)))
         if (N*(N-1)//2) != NN:
-            raise ValueError('The length of the condensed distance matrix '
-                             'must be (k \choose 2) for k data points!')
+            raise ValueError(r'The length of the condensed distance matrix '
+                             r'must be (k \choose 2) for k data points!')
     else:
         assert X.ndim==2
         N = len(X)
@@ -274,7 +274,7 @@ booleanmetrics = ('yule', 'matching', 'dice', 'kulsinski', 'rogerstanimoto',
                   'sokalmichener', 'russellrao', 'sokalsneath', 'kulsinski')
 
 def linkage_vector(X, method='single', metric='euclidean', extraarg=None):
-    '''Hierarchical (agglomerative) clustering on Euclidean data.
+    r'''Hierarchical (agglomerative) clustering on Euclidean data.
 
 Compared to the 'linkage' method, 'linkage_vector' uses a memory-saving
 algorithm. While the linkage method requires Θ(N^2) memory for

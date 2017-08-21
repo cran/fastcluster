@@ -2,7 +2,11 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-import numpy
+
+#import distutils.debug
+#distutils.debug.DEBUG = 'yes'
+from setuptools import setup, Extension
+
 if sys.hexversion < 0x03000000: # uniform unicode handling for both Python 2.x and 3.x
     def u(x):
         return x.decode('utf-8')
@@ -19,17 +23,32 @@ u('''
   Copyright © 2011 Daniel Müllner
   <http://danifold.net>
 ''')
-#import distutils.debug
-#distutils.debug.DEBUG = 'yes'
-from setuptools import setup, Extension
 
 with textfileopen('fastcluster.py') as f:
     for line in f:
-        if line.find('__version_info__ =')==0:
+        if line.find('__version_info__ =') == 0:
             version = '.'.join(line.split("'")[1:-1:2])
             break
 
 print('Version: ' + version)
+
+
+def get_include_dirs():
+    """ Avoid importing numpy until here, so that users can run "setup.py install"
+    without having numpy installed yet. """
+    def is_special_command():
+        special_list = ('--help-commands',
+                        'egg_info',
+                        '--version',
+                        'clean')
+        return ('--help' in sys.argv[1:] or
+                sys.argv[1] in special_list)
+
+    if len(sys.argv) >= 2 and is_special_command():
+        return []
+
+    import numpy
+    return [numpy.get_include()]
 
 setup(name='fastcluster',
       version=version,
@@ -62,18 +81,35 @@ page <http://www.lfd.uci.edu/~gohlke/pythonlibs/#fastcluster>`_.
 from now on. If some years from now there have not been any updates, this
 does not necessarily mean that the package is unmaintained but maybe it just
 was not necessary to correct anything. Of course, please still report potential
-bugs and incompatibilities to daniel@danifold.net.**
+bugs and incompatibilities to daniel@danifold.net. You may also use**
+`my GitHub repository <https://github.com/dmuellner/fastcluster/>`_
+**for bug reports, pull requests etc.**
+
+Note that PyPI and my GitHub repository host the source code for the Python
+interface only. The archive with both the R and the Python interface is
+available on `CRAN
+<https://cran.r-project.org/web/packages/fastcluster/index.html>`_ and the
+GitHub repository `“cran/fastcluster”
+<https://github.com/cran/fastcluster>`_. Even though I appear as the author also
+of this second GitHub repository, this is just an automatic, read-only mirror
+of the CRAN archive, so please do not attempt to report bugs or contact me via
+this repository.
+
+**Version 1.1.23 had only the file** ``setup.py`` **changed for better dependency
+resolution. If version 1.1.22 is installed on your system, this is perfectly
+fine.**
 
 Reference: Daniel Müllner, *fastcluster: Fast Hierarchical, Agglomerative
 Clustering Routines for R and Python*, Journal of Statistical Software, **53**
 (2013), no. 9, 1–18, http://www.jstatsoft.org/v53/i09/.
 """),
       requires=['numpy'],
+      install_requires=["numpy>=1.9"],
       provides=['fastcluster'],
       ext_modules=[Extension('_fastcluster',
                              ['fastcluster_python.cpp'],
-                             extra_compile_args=['/EHsc'] if os.name=='nt' else [],
-                             include_dirs=[numpy.get_include()],
+                             extra_compile_args=['/EHsc'] if os.name == 'nt' else [],
+                             include_dirs=get_include_dirs(),
 # Feel free to uncomment the line below if you use the GCC.
 # This switches to more aggressive optimization and turns
 # more warning switches on. No warning should appear in
@@ -92,23 +128,25 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
 # Linker optimization
 #extra_link_args=['-Wl,--strip-all'],
       )],
-      keywords=['dendrogram', 'linkage', 'cluster', 'agglomerative', 'hierarchical', 'hierarchy', 'ward'],
+      keywords=['dendrogram', 'linkage', 'cluster', 'agglomerative',
+                'hierarchical', 'hierarchy', 'ward'],
       author=u("Daniel Müllner"),
       author_email="daniel@danifold.net",
       license="BSD <http://opensource.org/licenses/BSD-2-Clause>",
-      classifiers = ["Topic :: Scientific/Engineering :: Information Analysis",
-                     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-                     "Topic :: Scientific/Engineering :: Bio-Informatics",
-                     "Topic :: Scientific/Engineering :: Mathematics",
-                     "Programming Language :: Python",
-                     "Programming Language :: Python :: 2",
-                     "Programming Language :: Python :: 3",
-                     "Programming Language :: C++",
-                     "Operating System :: OS Independent",
-                     "License :: OSI Approved :: BSD License",
-                     "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
-                     "Intended Audience :: Science/Research",
-                     "Development Status :: 5 - Production/Stable"],
-      url = 'http://danifold.net',
-      test_suite='tests',
+      classifiers=[
+          "Topic :: Scientific/Engineering :: Information Analysis",
+          "Topic :: Scientific/Engineering :: Artificial Intelligence",
+          "Topic :: Scientific/Engineering :: Bio-Informatics",
+          "Topic :: Scientific/Engineering :: Mathematics",
+          "Programming Language :: Python",
+          "Programming Language :: Python :: 2",
+          "Programming Language :: Python :: 3",
+          "Programming Language :: C++",
+          "Operating System :: OS Independent",
+          "License :: OSI Approved :: BSD License",
+          "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+          "Intended Audience :: Science/Research",
+          "Development Status :: 5 - Production/Stable"],
+      url='http://danifold.net',
+      test_suite='tests.fastcluster_test',
 )
