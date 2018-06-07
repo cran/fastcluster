@@ -5,21 +5,9 @@
     * Until package version 1.1.23: © 2011 Daniel Müllner <http://danifold.net>
     * All changes from version 1.1.24 on: © Google Inc. <http://google.com>
 */
-#if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 6))
-#define HAVE_DIAGNOSTIC 1
-#endif
-
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wredundant-decls"
-#pragma GCC diagnostic ignored "-Wpadded"
-#endif
 #include <Rdefines.h>
 #include <R_ext/Rdynload.h>
 #include <Rmath.h> // for R_pow
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
 
 #define fc_isnan(X) ((X)!=(X))
 // There is ISNAN but it is so much slower on my x86_64 system with GCC!
@@ -52,17 +40,10 @@
   This is used for the 'order' field in the R output.
 */
 
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpadded"
-#endif
 struct pos_node {
   t_index pos;
   int node;
 };
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
 
 void order_nodes(const int N, const int * const merge, const t_index * const node_size, int * const order) {
   /* Parameters:
@@ -183,10 +164,6 @@ enum {
   METRIC_R_CANBERRA_OLD  = 6
 };
 
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpadded"
-#endif
 class R_dissimilarity {
 private:
   t_float * Xa;
@@ -208,10 +185,6 @@ private:
 public:
   // Ignore warning about uninitialized member variables. I know what I am
   // doing here, and some member variables are only used for certain metrics.
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Weffc++"
-#endif
   R_dissimilarity (t_float * const X_,
                    const int N_,
                    const int dim_,
@@ -274,9 +247,6 @@ public:
     }
 
   }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
 
   inline t_float operator () (const t_index i, const t_index j) const {
     return (this->*distfn)(i,j);
@@ -404,15 +374,8 @@ public:
     //return sqrt(dist);
     // we take the square root later
     if (check_NaN) {
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
       if (fc_isnan(dist))
         throw(nan_error());
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
     }
     return dist;
   }
@@ -545,19 +508,12 @@ private:
           //          warning(_("treating non-finite values as NA"));
         }
         else {
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
           if(*p1 || *p2) {
             ++count;
             if( ! (*p1 && *p2) ) {
               ++dist;
             }
           }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
           ++total;
         }
       }
@@ -597,9 +553,6 @@ private:
   }
 
 };
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
 
 extern "C" {
   SEXP fastcluster(SEXP const N_, SEXP const method_, SEXP D_, SEXP members_) {

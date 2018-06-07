@@ -101,17 +101,6 @@ typedef __int64 int64_t;
 #endif
 #endif
 
-// Suppress warnings about (potentially) uninitialized variables.
-#ifdef _MSC_VER
-	#pragma warning (disable:4700)
-#endif
-
-#ifndef HAVE_DIAGNOSTIC
-#if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 6))
-#define HAVE_DIAGNOSTIC 1
-#endif
-#endif
-
 #ifndef HAVE_VISIBILITY
 #if __GNUC__ >= 4
 #define HAVE_VISIBILITY 1
@@ -418,19 +407,12 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
   min = std::numeric_limits<t_float>::infinity();
   for (i=1; i<N; ++i) {
     d[i] = D[i-1];
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
     if (d[i] < min) {
       min = d[i];
       idx2 = i;
     }
     else if (fc_isnan(d[i]))
       throw (nan_error());
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
   }
   Z2.append(0, idx2, min);
 
@@ -442,17 +424,10 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
     min = d[idx2];
     for (i=idx2; i<prev_node; i=active_nodes.succ[i]) {
       t_float tmp = D_(i, prev_node);
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
       if (tmp < d[i])
         d[i] = tmp;
       else if (fc_isnan(tmp))
         throw (nan_error());
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
       if (d[i] < min) {
         min = d[i];
         idx2 = i;
@@ -460,17 +435,10 @@ static void MST_linkage_core(const t_index N, const t_float * const D,
     }
     for (; i<N; i=active_nodes.succ[i]) {
       t_float tmp = D_(prev_node, i);
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
       if (d[i] > tmp)
         d[i] = tmp;
       else if (fc_isnan(tmp))
         throw (nan_error());
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
       if (d[i] < min) {
         min = d[i];
         idx2 = i;
@@ -491,47 +459,26 @@ inline static void f_complete( t_float * const b, const t_float a ) {
 inline static void f_average( t_float * const b, const t_float a, const t_float s, const t_float t) {
   *b = s*a + t*(*b);
   #ifndef FE_INVALID
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
   if (fc_isnan(*b)) {
     throw(nan_error());
   }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
   #endif
 }
 inline static void f_weighted( t_float * const b, const t_float a) {
   *b = (a+*b)*.5;
   #ifndef FE_INVALID
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
   if (fc_isnan(*b)) {
     throw(nan_error());
   }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
   #endif
 }
 inline static void f_ward( t_float * const b, const t_float a, const t_float c, const t_float s, const t_float t, const t_float v) {
   *b = ( (v+s)*a - v*c + (v+t)*(*b) ) / (s+t+v);
   //*b = a+(*b)-(t*a+s*(*b)+v*c)/(s+t+v);
   #ifndef FE_INVALID
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
   if (fc_isnan(*b)) {
     throw(nan_error());
   }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
   #endif
 }
 inline static void f_centroid( t_float * const b, const t_float a, const t_float stc, const t_float s, const t_float t) {
@@ -540,24 +487,14 @@ inline static void f_centroid( t_float * const b, const t_float a, const t_float
   if (fc_isnan(*b)) {
     throw(nan_error());
   }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
   #endif
 }
 inline static void f_median( t_float * const b, const t_float a, const t_float c_4) {
   *b = (a+(*b))*.5 - c_4;
   #ifndef FE_INVALID
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
   if (fc_isnan(*b)) {
     throw(nan_error());
   }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
   #endif
 }
 
@@ -587,16 +524,9 @@ static void NN_chain_core(const t_index N, t_float * const D, t_members * const 
 
   for (t_float const * DD=D; DD!=D+(static_cast<std::ptrdiff_t>(N)*(N-1)>>1);
        ++DD) {
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
     if (fc_isnan(*DD)) {
       throw(nan_error());
     }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
   }
 
   #ifdef FE_INVALID
@@ -964,10 +894,6 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
   for (i=0; i<N_1; ++i) {
     min = std::numeric_limits<t_float>::infinity();
     for (idx=j=i+1; j<N; ++j, ++DD) {
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
       if (*DD<min) {
         min = *DD;
         idx = j;
@@ -975,9 +901,6 @@ static void generic_linkage(const t_index N, t_float * const D, t_members * cons
       else if (fc_isnan(*DD))
         throw(nan_error());
     }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
     mindist[i] = min;
     n_nghbr[i] = idx;
   }
@@ -1368,19 +1291,12 @@ static void MST_linkage_core_vector(const t_index N,
   min = std::numeric_limits<t_float>::infinity();
   for (i=1; i<N; ++i) {
     d[i] = dist(0,i);
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
     if (d[i] < min) {
       min = d[i];
       idx2 = i;
     }
     else if (fc_isnan(d[i]))
       throw (nan_error());
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
   }
 
   Z2.append(0, idx2, min);
@@ -1394,17 +1310,10 @@ static void MST_linkage_core_vector(const t_index N,
 
     for (i=idx2; i<N; i=active_nodes.succ[i]) {
       t_float tmp = dist(i, prev_node);
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
       if (d[i] > tmp)
         d[i] = tmp;
       else if (fc_isnan(tmp))
         throw (nan_error());
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
       if (d[i] < min) {
         min = d[i];
         idx2 = i;

@@ -20,7 +20,7 @@ also be obtained at <http://danifold.net/fastcluster.html>.
 """
 
 __all__ = ['single', 'complete', 'average', 'weighted', 'ward', 'centroid', 'median', 'linkage', 'linkage_vector']
-__version_info__ = ('1', '1', '24')
+__version_info__ = ('1', '1', '25')
 __version__ = '.'.join(__version_info__)
 
 from numpy import double, empty, array, ndarray, var, cov, dot, bool, \
@@ -32,7 +32,7 @@ except ImportError:
     def pdist(*args, **kwargs):
         raise ImportError('The fastcluster.linkage function cannot process '
                           'vector data since the function '
-                          'scipy.partial.distance.pdist could not be  '
+                          'scipy.spatial.distance.pdist could not be  '
                           'imported.')
 from _fastcluster import linkage_wrap, linkage_vector_wrap
 

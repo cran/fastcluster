@@ -14,32 +14,8 @@
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
-#if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 6))
-#define HAVE_DIAGNOSTIC 1
-#endif
-
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wswitch-default"
-#pragma GCC diagnostic ignored "-Wpadded"
-#pragma GCC diagnostic ignored "-Wlong-long"
-#pragma GCC diagnostic ignored "-Wformat"
-#endif
 #include <Python.h>
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wlong-long"
-#pragma GCC diagnostic ignored "-Wpedantic"
-#pragma GCC diagnostic ignored "-Wpadded"
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#endif
 #include <numpy/arrayobject.h>
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
 
 /* It's complicated, but if I do not include the C++ math headers, GCC
    will complain about conversions from 'double' to 'float', whenever 'isnan'
@@ -245,10 +221,6 @@ static PyObject *linkage_wrap(PyObject * const, PyObject * const args) {
   unsigned char method;
 
   try{
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
     // Parse the input arguments
     if (!PyArg_ParseTuple(args, "lO!O!b",
                           &N_,                // signed long integer
@@ -257,9 +229,6 @@ static PyObject *linkage_wrap(PyObject * const, PyObject * const args) {
                           &method)) {        // unsigned char
       return NULL; // Error if the arguments have the wrong type.
     }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
     if (N_ < 1 ) {
       // N must be at least 1.
       PyErr_SetString(PyExc_ValueError,
@@ -375,14 +344,7 @@ static PyObject *linkage_wrap(PyObject * const, PyObject * const args) {
                     "C++ exception (unknown reason). Please send a bug report.");
     return NULL;
   }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
   Py_RETURN_NONE;
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
 }
 
 /*
@@ -460,10 +422,6 @@ private:
 public:
   // Ignore warning about uninitialized member variables. I know what I am
   // doing here, and some member variables are only used for certain metrics.
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Weffc++"
-#endif
   python_dissimilarity (PyArrayObject * const Xarg,
                         t_index * const members_,
                         const method_codes method,
@@ -491,18 +449,11 @@ public:
               "The 'seuclidean' metric needs a variance parameter.");
           throw pythonerror();
         }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
         V = reinterpret_cast<PyArrayObject *>(PyArray_FromAny(extraarg,
                 PyArray_DescrFromType(NPY_DOUBLE),
                 1, 1,
                 NPY_ARRAY_CARRAY_RO,
                 NULL));
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
         if (PyErr_Occurred()) {
           throw pythonerror();
         }
@@ -560,18 +511,11 @@ public:
             "The 'mahalanobis' metric needs a parameter for the inverse covariance.");
           throw pythonerror();
         }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
         V = reinterpret_cast<PyArrayObject *>(PyArray_FromAny(extraarg,
               PyArray_DescrFromType(NPY_DOUBLE),
               2, 2,
               NPY_ARRAY_CARRAY_RO,
               NULL));
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
         if (PyErr_Occurred()) {
           throw pythonerror();
         }
@@ -636,19 +580,9 @@ public:
       postprocessfn = &cluster_result::sqrt;
     }
   }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
 
   ~python_dissimilarity() {
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
     Py_XDECREF(V);
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
   }
 
   inline t_float operator () (const t_index i, const t_index j) const {
@@ -756,14 +690,7 @@ public:
       sum += diff*diff;
     }
     if (check_NaN) {
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
       if (fc_isnan(sum))
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
         throw(nan_error());
     }
     return sum;
@@ -777,15 +704,8 @@ public:
       t_float diff = Pi[k] - Pj[k];
       sum += diff*diff;
     }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
     if (fc_isnan(sum))
       throw(nan_error());
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
     return sum;
   }
 
@@ -801,10 +721,6 @@ private:
       throw pythonerror();
     }
 
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
     if (postprocessarg==std::numeric_limits<t_float>::infinity()) {
       set_chebychev();
     }
@@ -818,9 +734,6 @@ private:
       distfn = &python_dissimilarity::minkowski;
       postprocessfn = &cluster_result::power;
     }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
   }
 
   void set_euclidean() {
@@ -883,14 +796,7 @@ private:
   t_float hamming(const t_index i, const t_index j) const {
     t_float sum = 0;
     for (t_index k=0; k<dim; ++k) {
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
       sum += (X(i,k)!=X(j,k));
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
     }
     return sum;
   }
@@ -901,15 +807,8 @@ private:
     t_index sum1 = 0;
     t_index sum2 = 0;
     for (t_index k=0; k<dim; ++k) {
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
       sum1 += (X(i,k)!=X(j,k));
       sum2 += ((X(i,k)!=0) || (X(j,k)!=0));
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
     }
     return sum1==0 ? 0 : static_cast<t_float>(sum1) / static_cast<t_float>(sum2);
   }
@@ -918,43 +817,22 @@ private:
     t_float sum = 0;
     for (t_index k=0; k<dim; ++k) {
       t_float numerator = std::abs(X(i,k)-X(j,k));
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
       sum += numerator==0 ? 0 : numerator / (std::abs(X(i,k)) + std::abs(X(j,k)));
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
     }
     return sum;
   }
 
   t_float user(const t_index i, const t_index j) const {
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
     PyObject * u = PySequence_ITEM(X_Python, i);
     PyObject * v = PySequence_ITEM(X_Python, j);
     PyObject * result = PyObject_CallFunctionObjArgs(userfn, u, v, NULL);
     Py_DECREF(u);
     Py_DECREF(v);
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
     if (result==NULL) {
       throw pythonerror();
     }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
     const t_float C_result = PyFloat_AsDouble(result);
     Py_DECREF(result);
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
     if (PyErr_Occurred()) {
       throw pythonerror();
     }
@@ -1078,10 +956,6 @@ static PyObject *linkage_vector_wrap(PyObject * const, PyObject * const args) {
 
   try{
     // Parse the input arguments
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
     if (!PyArg_ParseTuple(args, "O!O!bbO",
                           &PyArray_Type, &X, // NumPy array
                           &PyArray_Type, &Z, // NumPy array
@@ -1090,9 +964,6 @@ static PyObject *linkage_vector_wrap(PyObject * const, PyObject * const args) {
                           &extraarg )) {     // Python object
       return NULL;
     }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
 
     if (PyArray_NDIM(X) != 2) {
       PyErr_SetString(PyExc_ValueError,
@@ -1235,14 +1106,7 @@ static PyObject *linkage_vector_wrap(PyObject * const, PyObject * const args) {
                     "C++ exception (unknown reason). Please send a bug report.");
     return NULL;
   }
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#endif
   Py_RETURN_NONE;
-#if HAVE_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
 }
 
 #if HAVE_VISIBILITY

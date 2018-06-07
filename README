@@ -25,6 +25,9 @@ The fastcluster package is distributed under the BSD license. See the file
 LICENSE in the source distribution or
 <http://opensource.org/licenses/BSD-2-Clause>.
 
+Christoph Dalitz wrote a pure C++ interface to fastcluster:
+<http://informatik.hsnr.de/~dalitz/data/hclust>.
+
 
 Installation
 ‾‾‾‾‾‾‾‾‾‾‾‾

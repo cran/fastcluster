@@ -1,30 +1,35 @@
 Package: fastcluster
 Encoding: UTF-8
 Type: Package
-Version: 1.1.24
-Date: 2017-08-14
-Title: Fast Hierarchical Clustering Routines for R and Python
-Authors@R: person("Daniel", "Müllner", email = "daniel@danifold.net", role = c("aut", "cph", "cre"))
+Version: 1.1.25
+Date: 2018-05-29
+Title: Fast Hierarchical Clustering Routines for R and 'Python'
+Authors@R: c(person("Daniel", "Müllner", email = "daniel@danifold.net", role = c("aut", "cph", "cre")),
+             person("Google Inc.", role="cph"))
 Copyright: Until package version 1.1.23: © 2011 Daniel Müllner
         <http://danifold.net>. All changes from version 1.1.24 on: ©
         Google Inc. <http://google.com>.
 Enhances: stats, flashClust
 Depends: R (>= 3.0.0)
 Description: This is a two-in-one package which provides interfaces to
-        both R and Python. It implements fast hierarchical, agglomerative
+        both R and 'Python'. It implements fast hierarchical, agglomerative
         clustering routines. Part of the functionality is designed as drop-in
-        replacement for existing routines: linkage() in the SciPy package
+        replacement for existing routines: linkage() in the 'SciPy' package
         'scipy.cluster.hierarchy', hclust() in R's 'stats' package, and the
         'flashClust' package. It provides the same functionality with the
         benefit of a much faster implementation. Moreover, there are
         memory-saving routines for clustering of vector data, which go beyond
         what the existing packages provide. For information on how to install
-        the Python files, see the file INSTALL in the source distribution.
+        the 'Python' files, see the file INSTALL in the source distribution.
+        Based on the present package, Christoph Dalitz also wrote a pure 'C++'
+        interface to 'fastcluster':
+        <http://informatik.hsnr.de/~dalitz/data/hclust>.
 License: FreeBSD | GPL-2 | file LICENSE
 URL: http://danifold.net/fastcluster.html
 NeedsCompilation: yes
-Packaged: 2017-08-20 21:16:52 UTC; muellner
-Author: Daniel Müllner [aut, cph, cre]
+Packaged: 2018-06-07 17:28:36 UTC; muellner
+Author: Daniel Müllner [aut, cph, cre],
+  Google Inc. [cph]
 Maintainer: Daniel Müllner <daniel@danifold.net>
 Repository: CRAN
-Date/Publication: 2017-08-21 10:36:48 UTC
+Date/Publication: 2018-06-07 19:00:32 UTC
