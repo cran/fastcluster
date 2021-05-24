@@ -20,11 +20,11 @@ also be obtained at <http://danifold.net/fastcluster.html>.
 """
 
 __all__ = ['single', 'complete', 'average', 'weighted', 'ward', 'centroid', 'median', 'linkage', 'linkage_vector']
-__version_info__ = ('1', '1', '25')
+__version_info__ = ('1', '2', '2')
 __version__ = '.'.join(__version_info__)
 
-from numpy import double, empty, array, ndarray, var, cov, dot, bool, \
-    expand_dims, ceil, sqrt
+from numpy import double, empty, array, ndarray, var, cov, dot, expand_dims, \
+    ceil, sqrt
 from numpy.linalg import inv
 try:
     from scipy.spatial.distance import pdist
@@ -240,7 +240,7 @@ and simply ignores the mask.'''
     else:
         assert X.ndim==2
         N = len(X)
-        X = pdist(X, metric)
+        X = pdist(X, metric=metric)
         X = array(X, dtype=double, copy=False, order='C', subok=True)
     Z = empty((N-1,4))
     if N > 1:
@@ -421,7 +421,8 @@ Recall that D denotes the number of dimensions, hence D=a+b+c+d.
 
 metric='yule'
 
-    d(u,v) = 2bc / (ad+bc)
+    d(u,v) = 2bc / (ad+bc)  if bc≠0
+    d(u,v) = 0              if bc=0
 
 metric='dice':
 

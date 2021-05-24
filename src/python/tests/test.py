@@ -11,7 +11,7 @@ import numpy as np
 from scipy.spatial.distance import pdist, squareform
 import math
 
-version = '1.1.25'
+version = '1.2.2'
 if fc.__version__ != version:
     raise ValueError('Wrong module version: {} instead of {}.'.format(fc.__version__, version))
 
@@ -46,7 +46,7 @@ def check(Z2, D, method):
     n = len(Ds)
     row_repr = np.arange(2*n-1)
     row_repr[n:] = -1
-    size = np.ones(n, dtype=np.int)
+    size = np.ones(n, dtype=int)
 
     np.fill_diagonal(Ds, np.nan)
 
@@ -152,17 +152,11 @@ message.
         print('Number of points: {0}'.format(n))
         D = pdist(np.random.randn(n,dim))
 
-        try:
-            print('Real distance values:')
-            test_all(D)
-            D = np.round(D*n/4)
-            print('Integer distance values:')
-            test_all(D)
-        except AssertionError as E:
-            print(E)
-            print(squareform(D))
-            return False
-    return True
+        print('Real distance values:')
+        test_all(D)
+        D = np.round(D*n/4)
+        print('Integer distance values:')
+        test_all(D)
 
 if __name__ == "__main__":
     test(None)

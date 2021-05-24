@@ -1,115 +1,96 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
-import sys
-
-#import distutils.debug
-#distutils.debug.DEBUG = 'yes'
-from setuptools import setup, Extension
-
-if sys.hexversion < 0x03000000: # uniform unicode handling for both Python 2.x and 3.x
-    def u(x):
-        return x.decode('utf-8')
-    def textfileopen(filename):
-        return open(filename, mode='r')
-else:
-    def u(x):
-        return x
-    def textfileopen(filename):
-        return open(filename, mode='r', encoding='utf_8')
-u('''
+u'''
   fastcluster: Fast hierarchical clustering routines for R and Python
 
   Copyright:
     * Until package version 1.1.23: © 2011 Daniel Müllner <http://danifold.net>
     * All changes from version 1.1.24 on: © Google Inc. <http://google.com>
-''')
+'''
+import os
+import sys
+import numpy
+from setuptools import setup, Extension
+from io import open
 
-with textfileopen('fastcluster.py') as f:
+with open('fastcluster.py', encoding='utf_8') as f:
     for line in f:
         if line.find('__version_info__ =') == 0:
             version = '.'.join(line.split("'")[1:-1:2])
             break
 
-print('Version: ' + version)
-
-
-def get_include_dirs():
-    """ Avoid importing numpy until here, so that users can run "setup.py install"
-    without having numpy installed yet. """
-    def is_special_command():
-        special_list = ('--help-commands',
-                        'egg_info',
-                        '--version',
-                        'clean')
-        return ('--help' in sys.argv[1:] or
-                sys.argv[1] in special_list)
-
-    if len(sys.argv) >= 2 and is_special_command():
-        return []
-
-    import numpy
-    return [numpy.get_include()]
+print('Fastcluster version: ' + version)
+print('Python version: ' + sys.version)
 
 setup(name='fastcluster',
       version=version,
       py_modules=['fastcluster'],
       description='Fast hierarchical clustering routines for R and Python.',
-      long_description=u("""
+      long_description=u"""
 This library provides Python functions for hierarchical clustering. It
 generates hierarchical clusters from distance matrices or from vector data.
 
-Part of this module is intended to replace the functions ::
-
+This module is intended to replace the functions
+```
     linkage, single, complete, average, weighted, centroid, median, ward
-
-in the module ``scipy.cluster.hierarchy`` with the same functionality but much
-faster algorithms. Moreover, the function ``linkage_vector`` provides
-memory-efficient clustering for vector data.
+```
+in the module [`scipy.cluster.hierarchy`](
+https://docs.scipy.org/doc/scipy/reference/cluster.hierarchy.html) with the same
+functionality but much faster algorithms. Moreover, the function
+`linkage_vector` provides memory-efficient clustering for vector data.
 
 The interface is very similar to MATLAB's Statistics Toolbox API to make code
 easier to port from MATLAB to Python/NumPy. The core implementation of this
 library is in C++ for efficiency.
 
-**User manual:** `fastcluster.pdf
-<https://github.com/dmuellner/fastcluster/raw/master/docs/fastcluster.pdf>`_.
+**User manual:** [fastcluster.pdf](
+https://github.com/dmuellner/fastcluster/raw/master/docs/fastcluster.pdf).
 
-Installation files for Windows are provided on `PyPI
-<https://pypi.python.org/pypi/fastcluster>`_ and on `Christoph Gohlke's web
-page <http://www.lfd.uci.edu/~gohlke/pythonlibs/#fastcluster>`_.
+The “Yule” distance function changed in fastcluster version 1.2.0. This is
+following a [change in SciPy 1.6.3](
+https://github.com/scipy/scipy/commit/3b22d1da98dc1b5f64bc944c21f398d4ba782bce).
+It is recommended to use fastcluster version 1.1.x together with SciPy versions
+before 1.6.3 and fastcluster 1.2.x with SciPy ≥1.6.3.
 
-**The fastcluster package is considered stable and will undergo few changes
-from now on. If some years from now there have not been any updates, this
-does not necessarily mean that the package is unmaintained but maybe it just
-was not necessary to correct anything. Of course, please still report potential
-bugs and incompatibilities to daniel@danifold.net. You may also use**
-`my GitHub repository <https://github.com/dmuellner/fastcluster/>`_
-**for bug reports, pull requests etc.**
+The fastcluster package is considered stable and will undergo few changes
+from now on. If some years from now there have not been any updates, this does
+not necessarily mean that the package is unmaintained but maybe it just was
+not necessary to correct anything. Of course, please still report potential
+bugs and incompatibilities to daniel@danifold.net. You may also use
+[my GitHub repository](https://github.com/dmuellner/fastcluster/)
+for bug reports, pull requests etc.
 
-Note that PyPI and my GitHub repository host the source code for the Python
-interface only. The archive with both the R and the Python interface is
-available on `CRAN
-<https://CRAN.R-project.org/package=fastcluster>`_ and the
-GitHub repository `“cran/fastcluster”
-<https://github.com/cran/fastcluster>`_. Even though I appear as the author also
-of this second GitHub repository, this is just an automatic, read-only mirror
-of the CRAN archive, so please do not attempt to report bugs or contact me via
-this repository.
+Note that [PyPI](https://pypi.org/project/fastcluster/) and [my GitHub
+repository](https://github.com/dmuellner/fastcluster/) host the source code
+for the Python interface only. The archive with both the R and the Python
+interface is available on
+[CRAN](https://CRAN.R-project.org/package=fastcluster) and the GitHub repository
+[“cran/fastcluster”](https://github.com/cran/fastcluster). Even though I appear
+as the author also of this second GitHub repository, this is just an automatic,
+read-only mirror of the CRAN archive, so please do not attempt to report bugs or
+contact me via this repository.
 
-Christoph Dalitz wrote a pure `C++ interface to fastcluster
-<http://informatik.hsnr.de/~dalitz/data/hclust>`_.
+Installation files for Windows are provided on [PyPI](
+https://pypi.org/project/fastcluster/#files) and on [Christoph Gohlke's web
+page](http://www.lfd.uci.edu/~gohlke/pythonlibs/#fastcluster).
+
+Christoph Dalitz wrote a pure [C++ interface to fastcluster](
+https://lionel.kr.hs-niederrhein.de/~dalitz/data/hclust/).
 
 Reference: Daniel Müllner, *fastcluster: Fast Hierarchical, Agglomerative
 Clustering Routines for R and Python*, Journal of Statistical Software, **53**
-(2013), no. 9, 1–18, http://www.jstatsoft.org/v53/i09/.
-"""),
+(2013), no. 9, 1–18, https://www.jstatsoft.org/v53/i09/.
+""",
+      long_description_content_type='text/markdown',
+      python_requires='>=3',
       requires=['numpy'],
       install_requires=["numpy>=1.9"],
+      extras_require={'test':  ['scipy>=1.6.3']},
       provides=['fastcluster'],
       ext_modules=[Extension('_fastcluster',
                              ['fastcluster_python.cpp'],
                              extra_compile_args=['/EHsc'] if os.name == 'nt' else [],
-                             include_dirs=get_include_dirs(),
+                             include_dirs=[numpy.get_include()],
 # Feel free to uncomment the line below if you use the GCC.
 # This switches to more aggressive optimization and turns
 # more warning switches on. No warning should appear in
@@ -130,7 +111,7 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
       )],
       keywords=['dendrogram', 'linkage', 'cluster', 'agglomerative',
                 'hierarchical', 'hierarchy', 'ward'],
-      author=u("Daniel Müllner"),
+      author=u"Daniel Müllner",
       author_email="daniel@danifold.net",
       license="BSD <http://opensource.org/licenses/BSD-2-Clause>",
       classifiers=[
@@ -139,7 +120,6 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
           "Topic :: Scientific/Engineering :: Bio-Informatics",
           "Topic :: Scientific/Engineering :: Mathematics",
           "Programming Language :: Python",
-          "Programming Language :: Python :: 2",
           "Programming Language :: Python :: 3",
           "Programming Language :: C++",
           "Operating System :: OS Independent",

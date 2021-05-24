@@ -13,7 +13,7 @@ import numpy as np
 from scipy.spatial.distance import pdist, squareform
 import math
 
-version = '1.1.25'
+version = '1.2.2'
 if fc.__version__ != version:
     raise ValueError('Wrong module version: {} instead of {}.'.format(fc.__version__, version))
 
@@ -47,7 +47,7 @@ def test_all(n,dim):
   method = 'single'
 
   # metrics for boolean vectors
-  pcd = np.random.randint(0, 2, size=(n,dim), dtype=np.bool)
+  pcd = np.random.randint(0, 2, size=(n,dim), dtype=bool)
   pcd2 = pcd.copy()
 
   for metric in ('hamming', 'jaccard', 'yule', 'matching', 'dice',
@@ -61,7 +61,7 @@ def test_all(n,dim):
                  # http://projects.scipy.org/scipy/ticket/1484
                  ):
     sys.stdout.write("Metric: " + metric + "...")
-    D = pdist(pcd, metric)
+    D = pdist(pcd, metric=metric)
     D = correct_for_zero_vectors(D, pcd, metric)
 
     try:
@@ -92,15 +92,15 @@ def test_all(n,dim):
     if metric=='minkowski':
         p = np.random.uniform(1.,10.)
         sys.stdout.write("p: " + str(p) + "...")
-        D = pdist(pcd, metric, p)
+        D = pdist(pcd, metric=metric, p=p)
         Z2 = fc.linkage_vector(pcd, method, metric, p)
     elif metric=='user':
         # Euclidean metric as a user function
         fn = (lambda u, v: np.sqrt(((u-v)*(u-v).T).sum()))
-        D = pdist(pcd, fn)
+        D = pdist(pcd, metric=fn)
         Z2 = fc.linkage_vector(pcd, method, fn)
     else:
-        D = pdist(pcd, metric)
+        D = pdist(pcd, metric=metric)
         D = correct_for_zero_vectors(D, pcd, metric)
         try:
             Z2 = fc.linkage_vector(pcd, method, metric)
@@ -127,7 +127,7 @@ def check(Z2, method, D):
     n = len(Ds)
     row_repr = np.arange(2*n-1)
     row_repr[n:] = -1
-    size = np.ones(n, dtype=np.int)
+    size = np.ones(n, dtype=int)
 
     np.fill_diagonal(Ds, np.nan)
 
@@ -233,13 +233,7 @@ message.
         print('Dimension: {0}'.format(dim))
         print('Number of points: {0}'.format(n))
 
-        try:
-            test_all(n,dim)
-        except AssertionError as E:
-            print(E.args[0])
-            print(E.args[1])
-            return False
-    return True
+        test_all(n,dim)
 
 if __name__ == "__main__":
     test(None)

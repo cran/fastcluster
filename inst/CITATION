@@ -8,11 +8,11 @@ citEntry(entry = "Article",
   volume       = "53",
   number       = "9",
   pages        = "1--18",
-  url          = "http://www.jstatsoft.org/v53/i09/",
+  url          = "https://www.jstatsoft.org/v53/i09/",
 
   textVersion  =
   paste("Daniel Müllner (2013).",
         "fastcluster: Fast Hierarchical, Agglomerative Clustering Routines for R and Python.",
         "Journal of Statistical Software, 53(9), 1-18.",
-        "URL http://www.jstatsoft.org/v53/i09/.")
+        "URL https://www.jstatsoft.org/v53/i09/.")
 )

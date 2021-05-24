@@ -1,8 +1,8 @@
 Package: fastcluster
 Encoding: UTF-8
 Type: Package
-Version: 1.1.25
-Date: 2018-05-29
+Version: 1.2.2
+Date: 2021-05-24
 Title: Fast Hierarchical Clustering Routines for R and 'Python'
 Authors@R: c(person("Daniel", "Müllner", email = "daniel@danifold.net", role = c("aut", "cph", "cre")),
              person("Google Inc.", role="cph"))
@@ -23,13 +23,13 @@ Description: This is a two-in-one package which provides interfaces to
         the 'Python' files, see the file INSTALL in the source distribution.
         Based on the present package, Christoph Dalitz also wrote a pure 'C++'
         interface to 'fastcluster':
-        <http://informatik.hsnr.de/~dalitz/data/hclust>.
+        <https://lionel.kr.hs-niederrhein.de/~dalitz/data/hclust/>.
 License: FreeBSD | GPL-2 | file LICENSE
 URL: http://danifold.net/fastcluster.html
 NeedsCompilation: yes
-Packaged: 2018-06-07 17:28:36 UTC; muellner
+Packaged: 2021-05-24 11:32:07 UTC; muellner
 Author: Daniel Müllner [aut, cph, cre],
   Google Inc. [cph]
 Maintainer: Daniel Müllner <daniel@danifold.net>
 Repository: CRAN
-Date/Publication: 2018-06-07 19:00:32 UTC
+Date/Publication: 2021-05-24 13:10:03 UTC
