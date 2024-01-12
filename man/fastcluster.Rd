@@ -34,13 +34,13 @@ source distribution.
     \href{https://CRAN.R-project.org/package=fastcluster/vignettes/fastcluster.pdf}{fastcluster.pdf}. Get this from the R
     command line with \code{vignette('fastcluster')}.
 
-    \item JSS paper: \url{https://www.jstatsoft.org/v53/i09/}.
+    \item JSS paper: \doi{10.18637/jss.v053.i09}.
 
     \item See the author's home page for a performance comparison:
-  \url{http://danifold.net/fastcluster.html}.
+  \url{https://danifold.net/fastcluster.html}.
     }
 }
-\references{\url{http://danifold.net/fastcluster.html}}
+\references{\url{https://danifold.net/fastcluster.html}}
 \author{Daniel Müllner}
 \seealso{\code{\link{hclust}}, \code{\link{hclust.vector}}}
 \examples{# Taken and modified from stats::hclust

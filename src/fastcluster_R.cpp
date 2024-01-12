@@ -2,8 +2,8 @@
   fastcluster: Fast hierarchical clustering routines for R and Python
 
   Copyright:
-    * Until package version 1.1.23: © 2011 Daniel Müllner <http://danifold.net>
-    * All changes from version 1.1.24 on: © Google Inc. <http://google.com>
+    * Until package version 1.1.23: © 2011 Daniel Müllner <https://danifold.net>
+    * All changes from version 1.1.24 on: © Google Inc. <https://www.google.com>
 */
 #include <Rdefines.h>
 #include <R_ext/Rdynload.h>
@@ -699,7 +699,7 @@ extern "C" {
       Rf_error( "Memory overflow.");
     }
     catch(const std::exception& e){
-      Rf_error( e.what() );
+      Rf_error( "%s", e.what() );
     }
     catch(const nan_error&){
       Rf_error("NaN dissimilarity value.");
@@ -886,7 +886,7 @@ extern "C" {
       Rf_error( "Memory overflow.");
     }
     catch(const std::exception& e){
-      Rf_error( e.what() );
+      Rf_error( "%s", e.what() );
     }
     catch(const nan_error&){
       Rf_error("NaN dissimilarity value.");

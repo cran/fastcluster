@@ -2,8 +2,8 @@
 __doc__ = """Fast hierarchical clustering routines for R and Python
 
 Copyright:
-Until package version 1.1.23: © 2011 Daniel Müllner <http://danifold.net>
-All changes from version 1.1.24 on: © Google Inc. <http://google.com>
+Until package version 1.1.23: © 2011 Daniel Müllner <https://danifold.net>
+All changes from version 1.1.24 on: © Google Inc. <https://www.google.com>
 
 This module provides fast hierarchical clustering routines. The "linkage"
 method is designed to provide a replacement for the “linkage” function and
@@ -20,7 +20,7 @@ also be obtained at <http://danifold.net/fastcluster.html>.
 """
 
 __all__ = ['single', 'complete', 'average', 'weighted', 'ward', 'centroid', 'median', 'linkage', 'linkage_vector']
-__version_info__ = ('1', '2', '3')
+__version_info__ = ('1', '2', '6')
 __version__ = '.'.join(__version_info__)
 
 from numpy import double, empty, array, ndarray, var, cov, dot, expand_dims, \

@@ -1,8 +1,8 @@
 #  fastcluster: Fast hierarchical clustering routines for R and Python
 #
 #  Copyright:
-#    * Until package version 1.1.23: © 2011 Daniel Müllner <http://danifold.net>
-#    * All changes from version 1.1.24 on: © Google Inc. <http://google.com>
+#    * Until package version 1.1.23: © 2011 Daniel Müllner <https://danifold.net>
+#    * All changes from version 1.1.24 on: © Google Inc. <https://www.google.com>
 #
 # Test script for the R interface
 
@@ -13,7 +13,7 @@ cat(sprintf("Random seed: %d\n",seed))
 print_seed <- function() {
   return(sprintf('
 Please send a report to the author of the \'fastcluster\' package, Daniel Müllner.
-For contact details, see <http://danifold.net>. To make the error
+For contact details, see <https://danifold.net>. To make the error
 reproducible, you must include the following number (the random seed value) in
 your error report: %d.\n\n', seed))
 }

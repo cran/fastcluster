@@ -5,15 +5,15 @@
 print('''
 Test program for the 'fastcluster' package.
 Copyright:
-  * Until package version 1.1.23: (c) 2011 Daniel Müllner <http://danifold.net>
-  * All changes from version 1.1.24 on: (c) Google Inc. <http://google.com>''')
+  * Until package version 1.1.23: (c) 2011 Daniel Müllner <https://danifold.net>
+  * All changes from version 1.1.24 on: (c) Google Inc. <https://www.google.com>''')
 import sys
 import fastcluster as fc
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 import math
 
-version = '1.2.3'
+version = '1.2.6'
 if fc.__version__ != version:
     raise ValueError('Wrong module version: {} instead of {}.'.format(fc.__version__, version))
 

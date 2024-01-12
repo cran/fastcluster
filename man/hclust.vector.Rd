@@ -48,7 +48,7 @@ This function implements hierarchical, agglomerative clustering with memory-savi
   a vignette. Get this from the R command line with
   \code{vignette('fastcluster')}.
 }
-\references{\url{http://danifold.net/fastcluster.html}}
+\references{\url{https://danifold.net/fastcluster.html}}
 \author{Daniel Müllner}
 \seealso{\code{\link{fastcluster}}, \code{\link{hclust}}}
 \examples{# Taken and modified from stats::hclust
