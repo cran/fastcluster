@@ -16,11 +16,11 @@ saving algorithms.
 
 Refer to the User's manual "fastcluster.pdf" for comprehensive details. It
 is located in the directory inst/doc/ in the source distribution and may
-also be obtained at <http://danifold.net/fastcluster.html>.
+also be obtained at <https://danifold.net/fastcluster.html>.
 """
 
 __all__ = ['single', 'complete', 'average', 'weighted', 'ward', 'centroid', 'median', 'linkage', 'linkage_vector']
-__version_info__ = ('1', '2', '6')
+__version_info__ = ('1', '3', '0')
 __version__ = '.'.join(__version_info__)
 
 from numpy import double, empty, array, ndarray, var, cov, dot, expand_dims, \
@@ -227,11 +227,12 @@ raised.
 
 The linkage method does not treat NumPy's masked arrays as special
 and simply ignores the mask.'''
-    X = array(X, copy=False, subok=True)
+    X = array(X, subok=True)
     if X.ndim==1:
         if method=='single':
             preserve_input = False
-        X = array(X, dtype=double, copy=preserve_input, order='C', subok=True)
+        X = array(X, dtype=double, copy=True if preserve_input else None,
+                  order='C', subok=True)
         NN = len(X)
         N = int(ceil(sqrt(NN*2)))
         if (N*(N-1)//2) != NN:
@@ -241,7 +242,7 @@ and simply ignores the mask.'''
         assert X.ndim==2
         N = len(X)
         X = pdist(X, metric=metric)
-        X = array(X, dtype=double, copy=False, order='C', subok=True)
+        X = array(X, dtype=double, order='C', subok=True)
     Z = empty((N-1,4))
     if N > 1:
         linkage_wrap(N, X, Z, mthidx[method])
@@ -271,8 +272,9 @@ mtridx = {'euclidean'      :  0,
           'USER'           : 19,
           }
 
-booleanmetrics = ('yule', 'matching', 'dice', 'kulsinski', 'rogerstanimoto',
-                  'sokalmichener', 'russellrao', 'sokalsneath', 'kulsinski')
+booleanmetrics = ('jaccard', 'yule', 'matching', 'dice', 'kulsinski',
+                  'rogerstanimoto', 'sokalmichener', 'russellrao',
+                  'sokalsneath', 'kulsinski')
 
 def linkage_vector(X, method='single', metric='euclidean', extraarg=None):
     r'''Hierarchical (agglomerative) clustering on Euclidean data.
@@ -395,18 +397,6 @@ metric='hamming': The Hamming distance accepts a Boolean array
 
     d(u,v) = |{j | u_j≠v_j }|
 
-metric='jaccard': The Jaccard distance accepts a Boolean array
-  (X.dtype==bool) for efficient storage. Any other data type is
-  converted to numpy.double.
-
-    d(u,v) = |{j | u_j≠v_j }| / |{j | u_j≠0 or v_j≠0 }|
-    d(0,0) = 0
-
-  Python represents True by 1 and False by 0. In the Boolean case, the
-  Jaccard distance is therefore:
-
-    d(u,v) = |{j | u_j≠v_j }| / |{j | u_j  ∨ v_j }|
-
 The following metrics are designed for Boolean vectors. The input array
 is converted to the 'bool' data type if it is not Boolean already. Use
 the following abbreviations to count the number of True/False
@@ -418,6 +408,11 @@ combinations:
   d = |{j | (¬u_j) ∧ (¬v_j) }|
 
 Recall that D denotes the number of dimensions, hence D=a+b+c+d.
+
+metric='jaccard'
+
+    d(u,v) = (b+c) / (b+c+d)
+    d(0,0) = 0
 
 metric='yule'
 
@@ -459,15 +454,16 @@ metric='matching':
 metric='sokalmichener' is an alias for 'matching'.'''
     if method=='single':
         assert metric!='USER'
-        if metric in ('hamming', 'jaccard'):
-            X = array(X, copy=False, subok=True)
+        if metric == 'hamming':
+            X = array(X, subok=True)
             dtype = bool if X.dtype==bool else double
         else:
             dtype = bool if metric in booleanmetrics else double
-        X = array(X, dtype=dtype, copy=False, order='C', subok=True)
+        X = array(X, dtype=dtype, order='C', subok=True)
     else:
         assert metric=='euclidean'
-        X = array(X, dtype=double, copy=(method=='ward'), order='C', subok=True)
+        X = array(X, dtype=double, copy=(True if method=='ward' else None),
+                  order='C', subok=True)
     assert X.ndim==2
     N = len(X)
     Z = empty((N-1,4))
@@ -480,7 +476,7 @@ metric='sokalmichener' is an alias for 'matching'.'''
             extraarg = inv(cov(X, rowvar=False))
         # instead of the inverse covariance matrix, pass the matrix product
         # with the data matrix!
-        extraarg = array(dot(X,extraarg),dtype=double, copy=False, order='C', subok=True)
+        extraarg = array(dot(X,extraarg), dtype=double, order='C', subok=True)
     elif metric=='correlation':
         X = X-expand_dims(X.mean(axis=1),1)
         metric='cosine'

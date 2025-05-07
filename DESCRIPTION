@@ -1,8 +1,8 @@
 Package: fastcluster
 Encoding: UTF-8
 Type: Package
-Version: 1.2.6
-Date: 2023-12-22
+Version: 1.3.0
+Date: 2025-05-07
 Title: Fast Hierarchical Clustering Routines for R and 'Python'
 Authors@R: c(person("Daniel", "Müllner", email = "daniel@danifold.net", role = c("aut", "cph", "cre")),
              person("Google Inc.", role="cph"))
@@ -27,9 +27,9 @@ Description: This is a two-in-one package which provides interfaces to
 License: FreeBSD | GPL-2 | file LICENSE
 URL: https://danifold.net/fastcluster.html
 NeedsCompilation: yes
-Packaged: 2023-12-22 20:04:59 UTC; muellner
+Packaged: 2025-05-07 06:30:40 UTC; muellner
 Author: Daniel Müllner [aut, cph, cre],
   Google Inc. [cph]
 Maintainer: Daniel Müllner <daniel@danifold.net>
 Repository: CRAN
-Date/Publication: 2024-01-12 22:30:02 UTC
+Date/Publication: 2025-05-07 07:50:02 UTC

@@ -44,13 +44,21 @@ easier to port from MATLAB to Python/NumPy. The core implementation of this
 library is in C++ for efficiency.
 
 **User manual:** [fastcluster.pdf](
-https://github.com/dmuellner/fastcluster/raw/master/docs/fastcluster.pdf).
+https://raw.githubusercontent.com/fastcluster/fastcluster/master/docs/fastcluster.pdf).
 
 The “Yule” distance function changed in fastcluster version 1.2.0. This is
 following a [change in SciPy 1.6.3](
 https://github.com/scipy/scipy/commit/3b22d1da98dc1b5f64bc944c21f398d4ba782bce).
-It is recommended to use fastcluster version 1.1.x together with SciPy versions
-before 1.6.3 and fastcluster 1.2.x with SciPy ≥1.6.3.
+The “Jaccard” distance function changed in the Python interface of fastcluster
+version 1.3.0. This is following a [change in SciPy 1.15.0](
+https://github.com/scipy/scipy/commit/ecf3ff0ff12666cbeaa5c61d5726fd0141657b54).
+Therefore, the following pairings of SciPy and fastcluster versions are recommended:
+
+|SciPy version v     |Recommended fastcluster version|
+|--------------------|-------------------------------|
+|v < 1.6.3           |1.1.28                         |
+|1.6.3 ≤  v < 1.15.0 |1.2.6                          |
+|v ≥ 1.15.0          |latest (≥ 1.3.0)               |
 
 The fastcluster package is considered stable and will undergo few changes
 from now on. If some years from now there have not been any updates, this does
@@ -84,8 +92,7 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
       long_description_content_type='text/markdown',
       python_requires='>=3',
       requires=['numpy'],
-      install_requires=["numpy>=1.9"],
-      extras_require={'test':  ['scipy>=1.6.3']},
+      install_requires=["numpy>=2"],
       provides=['fastcluster'],
       ext_modules=[Extension('_fastcluster',
                              ['fastcluster_python.cpp'],
@@ -113,7 +120,7 @@ Clustering Routines for R and Python*, Journal of Statistical Software, **53**
                 'hierarchical', 'hierarchy', 'ward'],
       author=u"Daniel Müllner",
       author_email="daniel@danifold.net",
-      license="BSD <http://opensource.org/licenses/BSD-2-Clause>",
+      license="BSD-2-clause OR GPL-2.0-or-later",
       classifiers=[
           "Topic :: Scientific/Engineering :: Information Analysis",
           "Topic :: Scientific/Engineering :: Artificial Intelligence",
